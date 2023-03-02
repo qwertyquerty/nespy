@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Callable
 
 class Cmp6502():
     class flags(Enum):
@@ -11,20 +12,20 @@ class Cmp6502():
         V = (1 << 6) # overflow
         N = (1 << 7) # negative
     
-    a = 0x00 # a register
-    x = 0x00 # x register
-    y = 0x00 # y register
-    pc = 0x0000 # program counter
-    s = 0x00 # stack pointer
-    p = 0x00 # status register
+    a: int = 0x00 # a register
+    x: int = 0x00 # x register
+    y: int = 0x00 # y register
+    pc: int = 0x0000 # program counter
+    s: int = 0x00 # stack pointer
+    p: int = 0x00 # status register
 
-    # these are used for addressing modes to store the data that they fetch or represent
-    fetched = 0x00
-    addr_abs = 0x0000
-    addr_rel = 0x0000
-
-    # this stores the opcode of the current instruction
-    opcode = 0x00
+    # these are util used for addressing modes to store the data that they fetch or represent
+    fetched: int = 0x00 # stores a byte fetched by the addressing mode read from addr_abs
+    addr_abs: int = 0x0000 # address fetched from, set by addressing modes
+    addr_rel: int = 0x0000 # only used in relative addressing mode
+    addr_mode: Callable = None # current addressing mode
+    instruction: Callable = None # current instruction
+    opcode: int = 0x00 # current opcode
 
     # this is used to time instructions, it will be incremented by the cycle count of an instruction
     # when an instruction is run and then will be decremented every clock cycle to zero before
@@ -33,6 +34,9 @@ class Cmp6502():
 
     def __init__(self, bus):
         self.bus = bus
+    
+    def fetch(self) -> int:
+        self.fetched = self.read(self.addr_abs)
     
     def read(self, addr: int) -> int:
         return self.bus.read(addr, read_only = False)
