@@ -17,7 +17,7 @@ class Cmp6502():
     y: int = 0x00 # y register
     pc: int = 0x0000 # program counter
     s: int = 0x00 # stack pointer
-    p: int = 0x00 # status register
+    status: int = 0x00 # status register
 
     # these are util used for addressing modes to store the data that they fetch or represent
     fetched: int = 0x00 # stores a byte fetched by the addressing mode read from addr_abs
@@ -37,6 +37,12 @@ class Cmp6502():
     
     def fetch(self) -> int:
         self.fetched = self.read(self.addr_abs)
+    
+    def set_flag(self, flag: int, val: bool):
+        if val:
+            self.status |= flag
+        else:
+            self.status &= ~flag
     
     def read(self, addr: int) -> int:
         return self.bus.read(addr, read_only = False)
