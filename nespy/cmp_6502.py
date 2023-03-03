@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Callable
 
+from nespy.operations import OPCODE_LOOKUP
+
 class Cmp6502():
     class flags(Enum):
         C = (1 << 0) # carry
@@ -54,11 +56,8 @@ class Cmp6502():
             self.opcode = self.read(self.pc) # read opcode at the program counter pointer
             self.pc += 1 # increment program counter
 
-            # right here is where we would apply the addressing mode
-
-            # right here is where we would run the operation
-
-            # here is where we would increment cycles by the cycle count of the instruction
+            operation = OPCODE_LOOKUP[self.opcode] # look up the instruction from the opcode lookup table
+            operation.run() # and run it
         
         self.cylces -= 1
     

@@ -7,7 +7,7 @@
 - [ ] CPU
     - [x] All addressing modes implemented
     - [ ] All instructions implemented
-    - [ ] All opmodes defined
+    - [x] All opcodes defined
 
 - [ ] ROM
     - [ ] Reading
