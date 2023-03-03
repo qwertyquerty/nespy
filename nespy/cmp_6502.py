@@ -22,7 +22,6 @@ class Cmp6502():
     # these are util used for addressing modes to store the data that they fetch or represent
     fetched: int = 0x00 # stores a byte fetched by the addressing mode read from addr_abs
     addr_abs: int = 0x0000 # address fetched from, set by addressing modes
-    addr_rel: int = 0x0000 # only used in relative addressing mode
     addr_mode: Callable = None # current addressing mode
     instruction: Callable = None # current instruction
     opcode: int = 0x00 # current opcode

@@ -35,11 +35,13 @@ def ZPY(cpu: Cmp6502) -> int:
 
 def REL(cpu: Cmp6502) -> int:
     # relative addressing
-    cpu.addr_rel = cpu.read(cpu.pc)
+    addr_rel = cpu.read(cpu.pc)
     cpu.pc += 1
 
-    if cpu.addr_rel & 0x80:
-        cpu.addr_rel |= 0xFF00
+    if addr_rel & 0x80:
+        addr_rel |= 0xFF00
+    
+    cpu.addr_abs = cpu.pc + addr_rel
     
     return 0
 
