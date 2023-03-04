@@ -79,7 +79,6 @@ class Cmp6502():
         # reset addressing mode util
         self.fetched = 0x00
         self.addr_abs = 0x0000
-        self.addr_rel = 0x0000
 
         # a reset takes 8 cycles to run
         self.cycles = 8

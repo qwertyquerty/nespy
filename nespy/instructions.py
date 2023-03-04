@@ -1,6 +1,6 @@
 from nespy.cmp_6502 import Cmp6502
 from nespy.addr_modes import *
-#addess modes IMP(Implied), ACC (Accumaluator), IMM (Immediate), ZP0 (Zero Page), REL (Relative), ABS (Absolute), IND (Indirect)
+
 def AND(cpu: Cmp6502) -> int:
     cpu.a &= cpu.fetched
     cpu.set_flag(cpu.flags.Z, cpu.a == 0x00)
