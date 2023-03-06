@@ -96,14 +96,14 @@ def DEY(cpu: Cmp6502) -> int:
 
     return 0
 
-def EOR(cpu: Cmp6502) -> int: # Or
+def EOR(cpu: Cmp6502) -> int:
     cpu.a = cpu.a ^ cpu.fetched
     cpu.set_flag(cpu.flags.Z, cpu.a == 0x00)
     cpu.set_flag(cpu.flags.N, cpu.a & 0x80)
 
     return 1
 
-def ORA(cpu: Cmp6502) -> int: # Exclusive Or
+def ORA(cpu: Cmp6502) -> int:
     cpu.a |= cpu.fetched
     cpu.set_flag(cpu.flags.Z, cpu.a == 0x00)
     cpu.set_flag(cpu.flags.N, cpu.a & 0x80)
@@ -134,6 +134,18 @@ def INY(cpu: Cmp6502) -> int:
 
 def JMP(cpu: Cmp6502) -> int:
     cpu.pc = cpu.addr_abs
+    return 0
+
+def JSR(cpu: Cmp6502) -> None:
+    t = (cpu.pc - 1) & 0xFFFF
+
+    cpu.write(0x0100 + cpu.s, (t >> 8) & 0x00FF)
+    cpu.s -= 1
+    cpu.write(0x0100 + cpu.s, t & 0x00FF)
+    cpu.s -= 1
+
+    cpu.pc = cpu.addr_abs
+
     return 0
 
 def LDA(cpu: Cmp6502) -> int:
@@ -192,19 +204,37 @@ def PLP(cpu: Cmp6502) -> int:
 
     return 0
 
+def RTI(cpu: Cmp6502) -> None:
+    cpu.s += 1
+    cpu.status = cpu.read(0x0100 + cpu.s)
+    cpu.status &= ~cpu.flags.B
+    cpu.status &= ~cpu.flags.U
+
+    cpu.s += 1
+    cpu.pc = cpu.read(0x0100 + cpu.s)
+    cpu.s += 1
+    cpu.pc |= cpu.read(0x0100 + cpu.s) << 8
+
+    return 0
+
+def RTS(cpu: Cmp6502) -> None:
+    cpu.s += 1
+    cpu.pc = cpu.read(0x0100 + cpu.s)
+    cpu.s += 1
+    cpu.pc |= cpu.read(0x0100 + cpu.s) << 8
+
+    return 0
+
 def STA(cpu: Cmp6502) -> None:
     cpu.write(cpu.addr_abs, cpu.a)
-
     return 0
 
 def STX(cpu: Cmp6502) -> None:
     cpu.write(cpu.addr_abs, cpu.x)
-
     return 0
 
 def STY(cpu: Cmp6502) -> None:
     cpu.write(cpu.addr_abs, cpu.y)
-
     return 0
 
 def TAX(cpu: Cmp6502) -> int:
