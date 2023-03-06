@@ -70,7 +70,7 @@ class Cmp6502():
         self.a = 0x00
         self.x = 0x00
         self.y = 0x00
-        self.s = 0x00
+        self.s = 0xFD
         self.status = 0x00 | self.flags.U
 
         # read FFFC and FFFD, these addresses hold the value for the program counter start
