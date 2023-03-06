@@ -1,6 +1,30 @@
 from nespy.cmp_6502 import Cmp6502
 from nespy.addr_modes import *
 
+def ADC(cpu: Cmp6502) -> int:
+    t = cpu.a + cpu.fetched + int(bool(cpu.status | cpu.flags.C))
+
+    cpu.set_flag(cpu.flags.C, t > 0xFF) # set carry bit since result is greater than 0xFF
+    cpu.set_flag(cpu.flags.Z, (t & 0xFF) == 0x00) # set zero bit if the actual resulting value is 0 (regardless of carry)
+    cpu.set_flag(cpu.flags.V, (~(cpu.a ^ cpu.fetched) & (cpu.a ^ cpu.temp)) & 0x80) # wacky logic for signed carry bit
+    cpu.set_flag(cpu.flags.N, t & 0x80)
+
+    cpu.a = t & 0xFF
+
+    return 1
+
+def SBC(cpu: Cmp6502) -> int:
+    t = cpu.a + (cpu.fetched ^ 0xFF) + int(bool(cpu.status | cpu.flags.C)) # fetched is inverted using xor
+
+    cpu.set_flag(cpu.flags.C, t & 0xFF00) # set carry bit since result is greater than 0xFF
+    cpu.set_flag(cpu.flags.Z, (t & 0xFF) == 0x00) # set zero bit if the actual resulting value is 0 (regardless of carry)
+    cpu.set_flag(cpu.flags.V, ((t ^ cpu.a) & (t ^ (cpu.fetched ^ 0xFF))) & 0x80) # wacky logic for signed carry bit
+    cpu.set_flag(cpu.flags.N, t & 0x80)
+
+    cpu.a = t & 0xFF
+
+    return 1
+
 def AND(cpu: Cmp6502) -> int:
     cpu.a &= cpu.fetched
     cpu.set_flag(cpu.flags.Z, cpu.a == 0x00)
@@ -20,6 +44,23 @@ def ASL(cpu: Cmp6502) -> int:
     else:
         cpu.write(cpu.addr_abs, t & 0x00FF)
     
+    return 0
+
+def BRK(cpu: Cmp6502) -> int: # program sourced interrupt
+    t = (cpu.pc + 1) & 0xFFFF
+
+    cpu.status |= cpu.flags.I
+    cpu.write(0x0100 + cpu.s, (t >> 8) & 0xFF)
+    cpu.s = (cpu.s - 1) & 0xFF
+    cpu.write(0x0100 + cpu.s, t & 0xFF)
+    cpu.s = (cpu.s - 1) & 0xFF
+
+    cpu.status |= cpu.flags.B
+    cpu.write(0x0100 + cpu.s, cpu.status)
+    cpu.status &= ~cpu.flags.B
+
+    cpu.pc = (cpu.read(0xFFFF) << 8) | cpu.read(0xFFFE)
+
     return 0
 
 def CLC(cpu: Cmp6502) -> int:
