@@ -326,51 +326,49 @@ def UNK(cpu: Cmp6502) -> int:
     return 0
 
 def ROL(cpu: Cmp6502) -> int: #moves accumator left a bit 
+    t = (int(bool(cpu.status | cpu.flags.C)) | (cpu.fetched << 1)) & 0xFF
+    cpu.set_flag(cpu.flags.N, t & 0x80)
+    cpu.set_flag(cpu.flags.Z, t == 0x00)
+    cpu.set_flag(cpu.flags.C, cpu.fetched & 0x80)
+
     if cpu.addr_mode == IMP:
-        t = cpu.a & 0x80
-        (cpu.a >> 1 | cpu.flag.C) & 0xFF00
-        cpu.flags.C = t 
-        cpu.set_flag(cpu.flags.N, cpu.fetched & 0x80)  
-        cpu.set_flag(cpu.flags.Z, cpu.fetched == 0x00)
+        cpu.a = t
     else:
-        t = cpu.fetched & 0x80#first bit
-        (cpu.a >> 1 | cpu.flag.C) & 0xFF00
-        cpu.flags.C = t     
-        cpu.set_flag(cpu.flags.N, cpu.fetched & 0x80)  
-        cpu.set_flag(cpu.flags.Z, cpu.fetched == 0x00)
-    return 1
+        cpu.write(cpu.addr_abs, t)
+
+    return 0
 
 def ROR(cpu: Cmp6502) -> int:
+    t = (int(bool(cpu.status | cpu.flags.C)) << 7) | (cpu.fetched >> 1)
+    cpu.set_flag(cpu.flags.N, t & 0x80)
+    cpu.set_flag(cpu.flags.Z, t == 0x00)
+    cpu.set_flag(cpu.flags.C, cpu.fetched & 0x01)
+
     if cpu.addr_mode == IMP:
-        t = cpu.a & 0x00
-        (cpu.flag.C | cpu.a << 1 ) & 0xFF00
-        cpu.flags.C = t 
-        cpu.set_flag(cpu.flags.N, cpu.a & 0x80)  
-        cpu.set_flag(cpu.flags.Z, cpu.a == 0x00)
+        cpu.a = t
     else:
-        t = cpu.fetched & 0x00#first bit
-        (cpu.flag.C | cpu.a << 1 ) & 0xFF00
-        cpu.flags.C = t     
-        cpu.set_flag(cpu.flags.N, cpu.fetched & 0x80)  
-        cpu.set_flag(cpu.flags.Z, cpu.fetched == 0x00)
-    return 1
+        cpu.write(cpu.addr_abs, t)
+
+    return 0
 
 def LSR(cpu: Cmp6502) -> int:
+    t = cpu.fetched >> 1
+    
+    cpu.set_flag(cpu.flags.N, t & 0x80)
+    cpu.set_flag(cpu.flags.Z, t == 0x00)
+    cpu.set_flag(cpu.flags.C, cpu.fetched & 0x01)
+
     if cpu.addr_mode == IMP:
-        t = cpu.a & 0x00
-        cpu.a << 1
-        cpu.set_flag(cpu.flags.N, cpu.a & 0x80)  
-        cpu.set_flag(cpu.flags.Z, cpu.a == 0x00)
+        cpu.a = t
     else:
-        t = cpu.fetched & 0x00
-        cpu.fetched << 1
-        cpu.set_flag(cpu.flags.N, cpu.fetched & 0x80)  
-        cpu.set_flag(cpu.flags.Z, cpu.fetched == 0x00)
-    return 1
+        cpu.write(cpu.addr_abs, t)
+
+    return 0
 
 def BIT(cpu: Cmp6502) -> int:
     t = cpu.a & cpu.fetched
     cpu.set_flag(cpu.flags.Z, t == 0x00)
-    cpu.set_flag(cpu.flags.N, cpu.fetched & 0x10) #bit 7  
-    cpu.set_flag(cpu.flags.V, cpu.fetched & 0x00) #bit 6
-    return 1
+    cpu.set_flag(cpu.flags.N, cpu.fetched & (1 << 7)) #bit 7  
+    cpu.set_flag(cpu.flags.V, cpu.fetched & (1 << 6)) #bit 6
+
+    return 0

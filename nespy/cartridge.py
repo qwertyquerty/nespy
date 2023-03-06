@@ -20,13 +20,13 @@ class Cartridge():
     
         # read in the header of the file
         name = stream.read(4).decode("ascii")
-        prg_rom_chunks = int.from_bytes(stream.read(1))
-        chr_rom_chunks = int.from_bytes(stream.read(1))
-        mapper_1 = int.from_bytes(stream.read(1))
-        mapper_2 = int.from_bytes(stream.read(1))
-        prg_ram_size = int.from_bytes(stream.read(1))
-        tv_system_1 = int.from_bytes(stream.read(1))
-        tv_system_2 = int.from_bytes(stream.read(1))
+        prg_rom_chunks = int.from_bytes(stream.read(1), 'little')
+        chr_rom_chunks = int.from_bytes(stream.read(1), 'little')
+        mapper_1 = int.from_bytes(stream.read(1), 'little')
+        mapper_2 = int.from_bytes(stream.read(1), 'little')
+        prg_ram_size = int.from_bytes(stream.read(1), 'little')
+        tv_system_1 = int.from_bytes(stream.read(1), 'little')
+        tv_system_2 = int.from_bytes(stream.read(1), 'little')
 
         stream.read(5) # unused bytes
 
@@ -46,7 +46,7 @@ class Cartridge():
             self.prg_memory = [0x00 for i in range(0x4000 * self.prg_banks)]
 
             for i in range(len(self.prg_memory)):
-                self.prg_memory[i] = int.from_bytes(stream.read(1))
+                self.prg_memory[i] = int.from_bytes(stream.read(1), 'little')
             
             self.chr_banks = chr_rom_chunks
 
@@ -55,8 +55,8 @@ class Cartridge():
             else:
                 self.chr_memory = [0x00 for i in range(0x2000 * self.chr_banks)]
             
-            for i in range(len(self.prg_memory)):
-                self.chr_memory[i] = int.from_bytes(stream.read(1))
+            for i in range(len(self.chr_memory)):
+                self.chr_memory[i] = int.from_bytes(stream.read(1), 'little')
 
 
         elif file_type == 2:
@@ -64,17 +64,17 @@ class Cartridge():
             self.prg_memory = [0x00 for i in range(0x4000 * self.prg_banks)]
 
             for i in range(len(self.prg_memory)):
-                self.prg_memory[i] = int.from_bytes(stream.read(1))
+                self.prg_memory[i] = int.from_bytes(stream.read(1), 'little')
             
             self.chr_banks = ((prg_ram_size & 0x38) << 8) | chr_rom_chunks
             self.chr_memory = [0x00 for i in range(0x2000 * self.chr_banks)]
 
             for i in range(len(self.chr_memory)):
-                self.chr_memory[i] = int.from_bytes(stream.read(1))
+                self.chr_memory[i] = int.from_bytes(stream.read(1), 'little')
         
         assert self.mapper_id in MAPPER_LOOKUP, f"unimplemented mapper id: {self.mapper_id}"
 
-        self.mapper = MAPPER_LOOKUP[self.mapper_id]
+        self.mapper = MAPPER_LOOKUP[self.mapper_id]()
 
         stream.close()
         rom_file.close()
