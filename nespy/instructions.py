@@ -9,7 +9,7 @@ def AND(cpu: Cmp6502) -> int:
     return 1
 
 def ASL(cpu: Cmp6502) -> int:
-    t = cpu.fetched << 1
+    t = (cpu.fetched << 1) & 0xFF
 
     cpu.set_flag(cpu.flags.C, (t & 0xFF00) > 0)
     cpu.set_flag(cpu.flags.Z, (t & 0x00FF) == 0x00)
@@ -51,7 +51,7 @@ def SEI(cpu: Cmp6502) -> int:
     return 0
 
 def CMP(cpu: Cmp6502) -> int:
-    t = cpu.a - cpu.fetched
+    t = (cpu.a - cpu.fetched) & 0xFF
     cpu.set_flag(cpu.flags.Z, t == 0)
     cpu.set_flag(cpu.flags.C, cpu.a >= cpu.fetched)
     cpu.set_flag(cpu.flags.N, t & 0x80) 
@@ -59,7 +59,7 @@ def CMP(cpu: Cmp6502) -> int:
     return 1
 
 def CPX(cpu: Cmp6502) -> int:
-    t = cpu.x - cpu.fetched
+    t = (cpu.x - cpu.fetched) & 0xFF
     cpu.set_flag(cpu.flags.Z, t == 0)
     cpu.set_flag(cpu.flags.C, cpu.x >= cpu.fetched)
     cpu.set_flag(cpu.flags.N, t & 0x80) 
@@ -67,7 +67,7 @@ def CPX(cpu: Cmp6502) -> int:
     return 0
 
 def CPY(cpu: Cmp6502) -> int:
-    t = cpu.y - cpu.fetched
+    t = (cpu.y - cpu.fetched) & 0xFF
     cpu.set_flag(cpu.flags.Z, t == 0)
     cpu.set_flag(cpu.flags.C, cpu.y >= cpu.fetched)
     cpu.set_flag(cpu.flags.N, t & 0x80) 
@@ -111,22 +111,22 @@ def ORA(cpu: Cmp6502) -> int:
     return 1
 
 def INC(cpu: Cmp6502) -> int:
-    t = cpu.fetched + 1
-    cpu.set_flag(cpu.flags.Z, (t & 0x00FF) == 0x00)
+    t = (cpu.fetched + 1) & 0xFF
+    cpu.set_flag(cpu.flags.Z, t == 0x00)
     cpu.set_flag(cpu.flags.N, t & 0x80)
-    cpu.write(cpu.addr_abs, t & 0x00FF)
+    cpu.write(cpu.addr_abs, t)
 
     return 0
 
 def INX(cpu: Cmp6502) -> int:
-    cpu.x += 1
+    cpu.x = (cpu.x + 1) & 0xFF
     cpu.set_flag(cpu.flags.Z, cpu.x == 0x00)
     cpu.set_flag(cpu.flags.N, cpu.x & 0x80)
 
     return 0
 
 def INY(cpu: Cmp6502) -> int:
-    cpu.y += 1
+    cpu.y = (cpu.y + 1) & 0xFF
     cpu.set_flag(cpu.flags.Z, cpu.y == 0x00)
     cpu.set_flag(cpu.flags.N, cpu.y & 0x80)
     
@@ -140,9 +140,9 @@ def JSR(cpu: Cmp6502) -> None:
     t = (cpu.pc - 1) & 0xFFFF
 
     cpu.write(0x0100 + cpu.s, (t >> 8) & 0x00FF)
-    cpu.s -= 1
+    cpu.s = (cpu.s - 1) & 0xFF
     cpu.write(0x0100 + cpu.s, t & 0x00FF)
-    cpu.s -= 1
+    cpu.s = (cpu.s - 1) & 0xFF
 
     cpu.pc = cpu.addr_abs
 
@@ -179,18 +179,18 @@ def NOP(cpu: Cmp6502) -> None:
 
 def PHA(cpu: Cmp6502) -> int: #pushes the content of the Accumulator onto the stack structure
     cpu.write(0x0100 + cpu.s, cpu.a)
-    cpu.s -= 1
+    cpu.s = (cpu.s - 1) & 0xFF
     return 0
 
 def PHP(cpu: Cmp6502) -> int: 
     cpu.write(0x0100 + cpu.s, cpu.status | (cpu.flags.B|cpu.flags.U))
     cpu.status &= ~(cpu.flags.B|cpu.flags.U)
-    cpu.s -= 1
+    cpu.s = (cpu.s - 1) & 0xFF
 
     return 0
 
 def PLA(cpu: Cmp6502) -> int:
-    cpu.s += 1
+    cpu.s = (cpu.s + 1) & 0xFF
     cpu.a = cpu.read(0x0100 + cpu.s)
     cpu.set_flag(cpu.flags.Z, cpu.a == 0x00)
     cpu.set_flag(cpu.flags.N, cpu.a & 0x80)
@@ -198,29 +198,29 @@ def PLA(cpu: Cmp6502) -> int:
     return 0
 
 def PLP(cpu: Cmp6502) -> int:
-    cpu.s += 1
+    cpu.s = (cpu.s + 1) & 0xFF
     cpu.status = cpu.read(0x100 + cpu.s)
     cpu.status |= cpu.flags.U
 
     return 0
 
 def RTI(cpu: Cmp6502) -> None:
-    cpu.s += 1
+    cpu.s = (cpu.s + 1) & 0xFF
     cpu.status = cpu.read(0x0100 + cpu.s)
     cpu.status &= ~cpu.flags.B
     cpu.status &= ~cpu.flags.U
 
-    cpu.s += 1
+    cpu.s = (cpu.s + 1) & 0xFF
     cpu.pc = cpu.read(0x0100 + cpu.s)
-    cpu.s += 1
+    cpu.s = (cpu.s + 1) & 0xFF
     cpu.pc |= cpu.read(0x0100 + cpu.s) << 8
 
     return 0
 
 def RTS(cpu: Cmp6502) -> None:
-    cpu.s += 1
+    cpu.s = (cpu.s + 1) & 0xFF
     cpu.pc = cpu.read(0x0100 + cpu.s)
-    cpu.s += 1
+    cpu.s = (cpu.s + 1) & 0xFF
     cpu.pc |= cpu.read(0x0100 + cpu.s) << 8
 
     return 0

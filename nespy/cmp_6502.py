@@ -28,6 +28,9 @@ class Cmp6502():
     instruction: Callable = None # current instruction
     opcode: int = 0x00 # current opcode
 
+    # these aren't used for emulation but are used for interface / debugging
+    clock_count: int = 0 # how many cycles have passed since reset
+
     # this is used to time instructions, it will be incremented by the cycle count of an instruction
     # when an instruction is run and then will be decremented every clock cycle to zero before
     # the next instruction can be run
@@ -54,17 +57,25 @@ class Cmp6502():
     def clock(self) -> None:
         if self.cycles == 0: # preivous instruction done, we're ready for the next instruction
             self.opcode = self.read(self.pc) # read opcode at the program counter pointer
-            self.pc += 1 # increment program counter
+            
+            self.status |= self.flags.U # for some reason this needs to be true
+
+            self.pc = (self.pc + 1) & 0xFFFF # increment program counter in bounds
 
             operation = OPCODE_LOOKUP[self.opcode] # look up the instruction from the opcode lookup table
             operation.run() # and run it
         
+            self.status |= self.flags.U # for some reason this needs to be true
+
         self.cylces -= 1
+        self.clock_count += 1
     
     def reset(self) -> None:
         """
         Equivalent to replugging the NES or hitting the reset button
         """
+        # reset non-emulation related variables
+        self.clock_count = 0
 
         # reset registers to default states
         self.a = 0x00
