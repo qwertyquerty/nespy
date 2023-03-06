@@ -97,9 +97,9 @@ class Cmp6502():
     def interrupt_request(self) -> None:
         if not (self.status | self.flags.I): # make sure interrupts aren't disabled
             self.write(0x0100 + self.s, (self.pc >> 8) & 0x00FF)
-            self.s -= 1
+            self.s = (self.s - 1) & 0xFF
             self.write(0x0100 + self.s, self.pc & 0x00FF)
-            self.s -= 1
+            self.s = (self.s - 1) & 0xFF
         
             self.status &= ~self.flags.B
             self.status |= self.flags.U
@@ -107,7 +107,7 @@ class Cmp6502():
 
             self.write(0x0100 + self.s, self.status)
 
-            self.s -= 1
+            self.s = (self.s - 1) & 0xFF
             self.pc = (self.read(0xFFFF) << 8) | self.read(0xFFFE)
     
             # an interrupt request takes 7 cycles
@@ -115,9 +115,9 @@ class Cmp6502():
     
     def non_maskable_interrupt(self) -> None:
         self.write(0x0100 + self.s, (self.pc >> 8) & 0x00FF)
-        self.s -= 1
+        self.s = (self.s - 1) & 0xFF
         self.write(0x0100 + self.s, self.pc & 0x00FF)
-        self.s -= 1
+        self.s = (self.s - 1) & 0xFF
     
         self.status &= ~self.flags.B
         self.status |= self.flags.U
@@ -125,7 +125,7 @@ class Cmp6502():
 
         self.write(0x0100 + self.s, self.status)
 
-        self.s -= 1
+        self.s = (self.s - 1) & 0xFF
         self.pc = (self.read(0xFFFB) << 8) | self.read(0xFFFA)
 
         # an NMI takes 8 cycles
