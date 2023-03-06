@@ -283,3 +283,53 @@ def TXS(cpu: Cmp6502) -> int:
 def UNK(cpu: Cmp6502) -> int:
     # placeholder for opcodes that dont exist (but we still need to handle just in case)
     return 0
+
+def ROL(cpu: Cmp6502) -> int: #moves accumator left a bit 
+    if cpu.addr_mode == IMP:
+        t = cpu.a & 0x80
+        (cpu.a >> 1 | cpu.flag.C) & 0xFF00
+        cpu.flags.C = t 
+        cpu.set_flag(cpu.flags.N, cpu.fetched & 0x80)  
+        cpu.set_flag(cpu.flags.Z, cpu.fetched == 0x00)
+    else:
+        t = cpu.fetched & 0x80#first bit
+        (cpu.a >> 1 | cpu.flag.C) & 0xFF00
+        cpu.flags.C = t     
+        cpu.set_flag(cpu.flags.N, cpu.fetched & 0x80)  
+        cpu.set_flag(cpu.flags.Z, cpu.fetched == 0x00)
+    return 1
+
+def ROR(cpu: Cmp6502) -> int:
+    if cpu.addr_mode == IMP:
+        t = cpu.a & 0x00
+        (cpu.flag.C | cpu.a << 1 ) & 0xFF00
+        cpu.flags.C = t 
+        cpu.set_flag(cpu.flags.N, cpu.a & 0x80)  
+        cpu.set_flag(cpu.flags.Z, cpu.a == 0x00)
+    else:
+        t = cpu.fetched & 0x00#first bit
+        (cpu.flag.C | cpu.a << 1 ) & 0xFF00
+        cpu.flags.C = t     
+        cpu.set_flag(cpu.flags.N, cpu.fetched & 0x80)  
+        cpu.set_flag(cpu.flags.Z, cpu.fetched == 0x00)
+    return 1
+
+def LSR(cpu: Cmp6502) -> int:
+    if cpu.addr_mode == IMP:
+        t = cpu.a & 0x00
+        cpu.a << 1
+        cpu.set_flag(cpu.flags.N, cpu.a & 0x80)  
+        cpu.set_flag(cpu.flags.Z, cpu.a == 0x00)
+    else:
+        t = cpu.fetched & 0x00
+        cpu.fetched << 1
+        cpu.set_flag(cpu.flags.N, cpu.fetched & 0x80)  
+        cpu.set_flag(cpu.flags.Z, cpu.fetched == 0x00)
+    return 1
+
+def BIT(cpu: Cmp6502) -> int:
+    t = cpu.a & cpu.fetched
+    cpu.set_flag(cpu.flags.Z, t == 0x00)
+    cpu.set_flag(cpu.flags.N, cpu.fetched & 0x10) #bit 7  
+    cpu.set_flag(cpu.flags.V, cpu.fetched & 0x00) #bit 6
+    return 1
