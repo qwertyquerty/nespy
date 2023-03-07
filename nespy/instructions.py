@@ -372,3 +372,66 @@ def BIT(cpu: Cmp6502) -> int:
     cpu.set_flag(cpu.flags.V, cpu.fetched & (1 << 6)) #bit 6
 
     return 0
+
+def BCC(cpu: Cmp6502) -> int: 
+    cpu.cycles += 2
+    if(cpu.flags.C == 0): 
+        cpu.cycles += 1
+        if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
+            cpu.cycles += 1
+
+
+def BCS(cpu: Cmp6502) -> int: 
+    cpu.cycles += 2
+    if(cpu.flags.C == 1): 
+        cpu.cycles += 1
+        if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
+            cpu.cycles += 1
+
+
+def BEQ(cpu: Cmp6502) -> int: 
+    cpu.cycles += 2
+    if(cpu.flags.Z == 1): 
+        cpu.cycles += 1
+        if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
+            cpu.cycles += 1
+
+
+def BNE(cpu: Cmp6502) -> int: 
+    cpu.cycles += 2
+    if(cpu.flags.Z == 0): 
+        cpu.cycles += 1
+        if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
+            cpu.cycles += 1
+
+
+def BVC(cpu: Cmp6502) -> int: 
+    cpu.cycles += 2
+    if(cpu.flags.V == 0): 
+        cpu.cycles += 1
+        if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
+            cpu.cycles += 1
+
+
+def BVS(cpu: Cmp6502) -> int: 
+    cpu.cycles += 2
+    if(cpu.flags.V == 1): 
+        cpu.cycles += 1
+        if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
+            cpu.cycles += 1
+
+
+def BPL(cpu: Cmp6502) -> int: 
+    cpu.cycles += 2
+    if(cpu.flags.N == 0): 
+        cpu.cycles += 1
+        if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
+            cpu.cycles += 1
+
+
+def BMI(cpu: Cmp6502) -> int: 
+    cpu.cycles += 2
+    if(cpu.flags.N == 1): 
+        cpu.cycles += 1
+        if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
+            cpu.cycles += 1
