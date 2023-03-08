@@ -1,10 +1,9 @@
-from enum import Enum
 from typing import Callable
 
 from nespy.operations import OPCODE_LOOKUP
 
 class Cmp6502():
-    class flags(Enum):
+    class flags:
         C = (1 << 0) # carry
         Z = (1 << 1) # zero
         I = (1 << 2) # interrupt disable

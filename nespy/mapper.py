@@ -41,6 +41,8 @@ class Mapper():
     def scanline(self):
         pass
 
-MAPPER_LOOKUP = {
+from nespy.mappers import *
 
+MAPPER_LOOKUP = {
+    1: Mapper1
 }

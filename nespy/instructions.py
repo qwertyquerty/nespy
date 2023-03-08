@@ -1,4 +1,9 @@
-from nespy.cmp_6502 import Cmp6502
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from nespy.cmp_6502 import Cmp6502
+
 from nespy.addr_modes import *
 
 def ADC(cpu: Cmp6502) -> int:

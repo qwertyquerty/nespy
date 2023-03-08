@@ -1,4 +1,8 @@
-from typing import Callable
+from __future__ import annotations
+from typing import TYPE_CHECKING, Callable
+
+if TYPE_CHECKING:
+    from nespy.cmp_6502 import Cmp6502
 
 from nespy.instructions import *
 from nespy.addr_modes import *
