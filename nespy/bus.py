@@ -1,3 +1,4 @@
+from nespy.cmp_2C02 import Cmp2C02
 from nespy.cmp_6502 import Cmp6502
 from nespy.cartridge import Cartridge
 
@@ -6,7 +7,7 @@ class Bus():
     ram: list = None
     cartridge: Cartridge = None
 
-    bus_cycle: int = 0
+    system_clock_count: int = 0
 
     dma_page: int = 0x00
     dma_addr: int = 0x00
@@ -16,6 +17,7 @@ class Bus():
 
     def __init__(self):
         self.cpu = Cmp6502(self)
+        self.ppu = Cmp2C02(self)
         self.ram = [0x00 for i in range(0x0800)]
     
     def reset(self):
@@ -23,6 +25,7 @@ class Bus():
             self.cartridge.reset()
         
         self.cpu.reset()
+        self.ppu.reset()
         self.ram = [0x00 for i in range(0x0800)]
 
         self.bus_cycle = 0
@@ -35,6 +38,7 @@ class Bus():
     
     def plug_cartridge(self, cart: Cartridge):
         self.cartridge = cart
+        self.ppu.plug_cartridge(self.cartridge)
 
     def read(self, addr: int, read_only: bool = False):
         value = 0x00
@@ -49,7 +53,7 @@ class Bus():
             value = self.ram[addr & 0x7FF] # mirrored every 0x800
         
         elif 0x2000 <= addr <= 0x3FFF: # PPU address range
-            pass # TODO: read from PPU, mirrored every 0x8
+            value = self.ppu.cpu_read(addr & 0x0007, read_only)
         
         elif addr == 0x4015: # specific address that reads APU status
             pass # TODO: read APU status
@@ -69,7 +73,7 @@ class Bus():
             self.ram[addr & 0x7FF] = value # mirrored every 0x800
 
         elif 0x2000 <= addr <= 0x3FFF: # PPU address range
-            pass # TODO: write to PPU, mirrored every 0x8
+            self.ppu.cpu_write(addr & 0x0007, value)
         
         elif (0x4000 <= addr <= 0x4013) or addr == 0x4015: # APU addresses
             pass # TODO: write to APU
@@ -83,11 +87,11 @@ class Bus():
             pass # TODO: lock in controller state
 
     def clock(self):
-        # TODO: clock ppu
+        self.ppu.clock()
 
         # TODO: clock apu
 
-        if self.bus_cycle == 0: # cpu only clocks once every 3 system clocks
+        if not (self.system_clock_count % 3): # cpu only clocks once every 3 system clocks
             # Direct memory access
             if self.dma_enable:
                 if self.dma_wait:
@@ -96,7 +100,7 @@ class Bus():
                     
                 else:
                     if self.system_clock_count % 2 == 0:
-                        self.dma_value = self.cpu_read((self.dma_page << 8) | self.dma_addr)
+                        self.dma_value = self.read((self.dma_page << 8) | self.dma_addr)
                     
                     else:
                         # TODO: write to PPA OAM here
@@ -109,11 +113,15 @@ class Bus():
             else:
                 # DMA isn't happening so we can actually clock the cpu
                 self.cpu.clock()
-            
-            self.bus_cycle = 3
 
-        # TODO: PPU NMIs
+        if self.ppu.nmi:
+            self.ppu.nmi = False
+            self.cpu.non_maskable_interrupt()
+        
+        if self.cartridge.mapper.irq_state():
+            self.cartridge.mapper.irq_clear()
+            self.cpu.interrupt_request()
 
         # TODO: Cartridge mapper IRQs
 
-        self.bus_cycle -= 1
+        self.system_clock_count += 1

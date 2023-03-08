@@ -84,16 +84,16 @@ class Cmp6502():
 
     def interrupt_request(self) -> None:
         if not (self.status | I): # make sure interrupts aren't disabled
-            self.write(0x0100 + self.s, (self.pc >> 8) & 0x00FF)
+            self.bus.write(0x0100 + self.s, (self.pc >> 8) & 0x00FF)
             self.s = (self.s - 1) & 0xFF
-            self.write(0x0100 + self.s, self.pc & 0x00FF)
+            self.bus.write(0x0100 + self.s, self.pc & 0x00FF)
             self.s = (self.s - 1) & 0xFF
         
             self.status &= ~B
             self.status |= U
             self.status |= I
 
-            self.write(0x0100 + self.s, self.status)
+            self.bus.write(0x0100 + self.s, self.status)
 
             self.s = (self.s - 1) & 0xFF
             self.pc = (self.bus.read(0xFFFF) << 8) | self.bus.read(0xFFFE)
@@ -102,16 +102,16 @@ class Cmp6502():
             self.cylces = 7
     
     def non_maskable_interrupt(self) -> None:
-        self.write(0x0100 + self.s, (self.pc >> 8) & 0x00FF)
+        self.bus.write(0x0100 + self.s, (self.pc >> 8) & 0x00FF)
         self.s = (self.s - 1) & 0xFF
-        self.write(0x0100 + self.s, self.pc & 0x00FF)
+        self.bus.write(0x0100 + self.s, self.pc & 0x00FF)
         self.s = (self.s - 1) & 0xFF
     
         self.status &= ~B
         self.status |= U
         self.status |= I
 
-        self.write(0x0100 + self.s, self.status)
+        self.bus.write(0x0100 + self.s, self.status)
 
         self.s = (self.s - 1) & 0xFF
         self.pc = (self.bus.read(0xFFFB) << 8) | self.bus.read(0xFFFA)
