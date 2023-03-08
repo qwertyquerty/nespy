@@ -11,7 +11,7 @@ def ADC(cpu: Cmp6502) -> int:
 
     cpu.set_flag(cpu.flags.C, t > 0xFF) # set carry bit since result is greater than 0xFF
     cpu.set_flag(cpu.flags.Z, (t & 0xFF) == 0x00) # set zero bit if the actual resulting value is 0 (regardless of carry)
-    cpu.set_flag(cpu.flags.V, (~(cpu.a ^ cpu.fetched) & (cpu.a ^ cpu.temp)) & 0x80) # wacky logic for signed carry bit
+    cpu.set_flag(cpu.flags.V, (~(cpu.a ^ cpu.fetched) & (cpu.a ^ t)) & 0x80) # wacky logic for signed carry bit
     cpu.set_flag(cpu.flags.N, t & 0x80)
 
     cpu.a = t & 0xFF
