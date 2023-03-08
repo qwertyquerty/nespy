@@ -16,7 +16,6 @@ class Operation():
     
     def run(self, cpu: Cmp6502):
         # set some util information that the instructions might use for special cases
-        cpu.opcode = self.opcode
         cpu.addr_mode = self.addr_mode
         cpu.instruction = self.instruction
 

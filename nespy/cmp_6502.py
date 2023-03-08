@@ -62,11 +62,11 @@ class Cmp6502():
             self.pc = (self.pc + 1) & 0xFFFF # increment program counter in bounds
 
             operation = OPCODE_LOOKUP[self.opcode] # look up the instruction from the opcode lookup table
-            operation.run() # and run it
+            operation.run(self) # and run it
         
             self.status |= self.flags.U # for some reason this needs to be true
 
-        self.cylces -= 1
+        self.cycles -= 1
         self.clock_count += 1
     
     def reset(self) -> None:
