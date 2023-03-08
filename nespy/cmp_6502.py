@@ -49,7 +49,7 @@ class Cmp6502():
             instruction, addr_mode, cycles = OPCODE_LOOKUP[self.opcode] # look up the instruction from the opcode lookup table
             self.addr_mode = addr_mode
             
-            extra_cycle = ((addr_mode(self)) & (instruction(self) if instruction is not None else 0))
+            extra_cycle = (addr_mode(self)) & (instruction(self))
             self.cycles += cycles + extra_cycle
 
             self.status |= U # for some reason this needs to be true
