@@ -1,7 +1,9 @@
+import cProfile
+
 from nespy.bus import Bus
 from nespy.cartridge import Cartridge
 
-if __name__ == "__main__":
+def main():
     nes = Bus()
     cart = Cartridge("./roms/zelda.nes")
     nes.plug_cartridge(cart)
@@ -14,3 +16,6 @@ if __name__ == "__main__":
             print(int(nes.cpu.clock_count / (time.time() - start)), "Hz", "OP:", nes.cpu.opcode)
 
         nes.clock()
+
+if __name__ == "__main__":
+    cProfile.run("main()")
