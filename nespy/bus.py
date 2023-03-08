@@ -6,7 +6,7 @@ class Bus():
     ram: list = None
     cartridge: Cartridge = None
 
-    system_clock_count: int = 0
+    bus_cycle: int = 0
 
     dma_page: int = 0x00
     dma_addr: int = 0x00
@@ -25,7 +25,7 @@ class Bus():
         self.cpu.reset()
         self.ram = [0x00 for i in range(0x0800)]
 
-        self.system_clock_count = 0
+        self.bus_cycle = 0
 
         self.dma_page = 0x00
         self.dma_addr = 0x00
@@ -35,7 +35,6 @@ class Bus():
     
     def plug_cartridge(self, cart: Cartridge):
         self.cartridge = cart
-
 
     def read(self, addr: int, read_only: bool = False):
         value = 0x00
@@ -88,7 +87,7 @@ class Bus():
 
         # TODO: clock apu
 
-        if self.system_clock_count % 3 == 0: # cpu only clocks once every 3 system clocks
+        if self.bus_cycle == 0: # cpu only clocks once every 3 system clocks
             # Direct memory access
             if self.dma_enable:
                 if self.dma_wait:
@@ -110,9 +109,11 @@ class Bus():
             else:
                 # DMA isn't happening so we can actually clock the cpu
                 self.cpu.clock()
+            
+            self.bus_cycle = 3
 
         # TODO: PPU NMIs
 
         # TODO: Cartridge mapper IRQs
 
-        self.system_clock_count += 1
+        self.bus_cycle -= 1

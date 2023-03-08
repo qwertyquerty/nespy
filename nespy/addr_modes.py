@@ -27,13 +27,13 @@ def ZP0(cpu: Cmp6502) -> int:
 
 def ZPX(cpu: Cmp6502) -> int:
     # ZP0 with x as an offset
-    cpu.addr_abs = (cpu.bus.read(cpu.pc) + cpu.x) & 0x00FF
+    cpu.addr_abs = (cpu.bus.read(cpu.pc) + cpu.x) & 0xFF
     cpu.pc += 1
     return 0
 
 def ZPY(cpu: Cmp6502) -> int:
     # ZP0 with y as an offset
-    cpu.addr_abs = (cpu.bus.read(cpu.pc) + cpu.y) & 0x00FF
+    cpu.addr_abs = (cpu.bus.read(cpu.pc) + cpu.y) & 0xFF
     cpu.pc += 1
     return 0
 
@@ -45,7 +45,7 @@ def REL(cpu: Cmp6502) -> int:
     if addr_rel & 0x80:
         addr_rel |= 0xFF00
     
-    cpu.addr_abs = cpu.pc + addr_rel
+    cpu.addr_abs = (cpu.pc + addr_rel) & 0xFFFF
     
     return 0
 
@@ -61,9 +61,9 @@ def ABX(cpu: Cmp6502) -> int:
     hbyte = cpu.bus.read(cpu.pc + 1)
     cpu.pc += 2
 
-    cpu.addr_abs = ((hbyte << 8) | lbyte) + cpu.x
+    cpu.addr_abs = (((hbyte << 8) | lbyte) + cpu.x) & 0xFFFF
 
-    return int((cpu.addr_abs & 0xFF00) != (hbyte << 8)) # if we changed pages, add extra clock cycle
+    return (cpu.addr_abs & 0xFF00) != (hbyte << 8) # if we changed pages, add extra clock cycle
 
 def ABY(cpu: Cmp6502) -> int:
     # ABS with y as an offset
@@ -71,9 +71,9 @@ def ABY(cpu: Cmp6502) -> int:
     hbyte = cpu.bus.read(cpu.pc + 1)
     cpu.pc += 2
 
-    cpu.addr_abs = ((hbyte << 8) | lbyte) + cpu.y
+    cpu.addr_abs = (((hbyte << 8) | lbyte) + cpu.y) & 0xFFFF
 
-    return int((cpu.addr_abs & 0xFF00) != (hbyte << 8)) # if we changed pages, add extra clock cycle
+    return (cpu.addr_abs & 0xFF00) != (hbyte << 8) # if we changed pages, add extra clock cycle
 
 def IND(cpu: Cmp6502) -> int:
     # indirect addressing, kind of like a double ABS
@@ -98,8 +98,8 @@ def IZX(cpu: Cmp6502) -> int:
     # IND with an x offset added to the second pointers
     ptr = cpu.bus.read(cpu.pc)
     cpu.pc += 1
-    lbyte = cpu.bus.read((ptr + cpu.x) & 0x00FF)
-    hbyte = cpu.bus.read((ptr + cpu.x + 1) & 0x00FF)
+    lbyte = cpu.bus.read((ptr + cpu.x) & 0xFF)
+    hbyte = cpu.bus.read((ptr + cpu.x + 1) & 0xFF)
     cpu.addr_abs = (hbyte << 8) | lbyte
     return 0
 
@@ -109,5 +109,5 @@ def IZY(cpu: Cmp6502) -> int:
     cpu.pc += 1
     lbyte = cpu.bus.read(ptr & 0x00FF)
     hbyte = cpu.bus.read((ptr + 1) & 0x00FF)
-    cpu.addr_abs = ((hbyte << 8) | lbyte) + cpu.y
-    return int((cpu.addr_abs & 0xFF00) != (hbyte << 8)) # if wee changed pages, add extra clock cycle
+    cpu.addr_abs = (((hbyte << 8) | lbyte) + cpu.y) & 0xFFFF
+    return (cpu.addr_abs & 0xFF00) != (hbyte << 8) # if wee changed pages, add extra clock cycle

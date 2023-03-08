@@ -74,7 +74,7 @@ class Cartridge():
         
         assert self.mapper_id in MAPPER_LOOKUP, f"unimplemented mapper id: {self.mapper_id}"
 
-        self.mapper = MAPPER_LOOKUP[self.mapper_id]()
+        self.mapper = MAPPER_LOOKUP[self.mapper_id](self.prg_banks, self.chr_banks)
 
         stream.close()
         rom_file.close()

@@ -21,7 +21,9 @@ class Mapper1(Mapper):
     
     mirroring_cases: tuple = (MIRROR_ONSCREEN_LO, MIRROR_ONSCREEN_HI, MIRROR_VERTICAL, MIRROR_HORIZONTAL)
 
-    def __init__(self):
+    def __init__(self, prg_banks: int, chr_banks: int):
+        super().__init__(prg_banks, chr_banks)
+        
         self.ram_static = [0x00 for i in range(0x8000)]
 
     def map_cpu_read(self, addr: int) -> Tuple[int, int]: # (addr, value)
@@ -60,8 +62,7 @@ class Mapper1(Mapper):
             
             else:
                 # load value into left of load register
-                self.load_register = self.load_register >> 1
-                self.load_register |= (value & 0x01 << 4)
+                self.load_register = (self.load_register >> 1) | (value & 0x01 << 4)
                 self.load_register_count += 1
 
                 if self.load_register_count == 5:

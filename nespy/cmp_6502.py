@@ -12,7 +12,6 @@ class Cmp6502():
     status: int = 0x00 # status register
 
     # these are util used for addressing modes to store the data that they fetch or represent
-    fetched: int = 0x00 # stores a byte fetched by the addressing mode read from addr_abs
     addr_abs: int = 0x0000 # address fetched from, set by addressing modes
     addr_mode: Callable = None # current addressing mode
     opcode: int = 0x00 # current opcode
@@ -29,19 +28,21 @@ class Cmp6502():
         self.bus = bus
     
     def fetch(self) -> int:
-        if self.addr_mode is not IMP:
-            self.fetched = self.bus.read(self.addr_abs)
+        if self.addr_mode is IMP:
+            return self.a
+        
+        return self.bus.read(self.addr_abs)
     
     def set_flag(self, flag: int, val: bool):
-        if val == 0:
-            self.status &= ~flag
-        else:
+        if val:
             self.status |= flag
+        else:
+            self.status &= ~flag
     
     def clock(self) -> None:
-        if self.cycles == 0: # preivous instruction done, we're ready for the next instruction
+        if not self.cycles: # preivous instruction done, we're ready for the next instruction
             self.opcode = self.bus.read(self.pc) # read opcode at the program counter pointer
-            
+
             self.status |= U # for some reason this needs to be true
 
             self.pc = (self.pc + 1) & 0xFFFF # increment program counter in bounds
@@ -49,7 +50,7 @@ class Cmp6502():
             instruction, addr_mode, cycles = OPCODE_LOOKUP[self.opcode] # look up the instruction from the opcode lookup table
             self.addr_mode = addr_mode
             
-            extra_cycle = (addr_mode(self)) & (instruction(self))
+            extra_cycle = (addr_mode(self)) & (instruction(self, self.addr_abs))
             self.cycles += cycles + extra_cycle
 
             self.status |= U # for some reason this needs to be true

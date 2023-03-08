@@ -13,6 +13,7 @@ class Mapper():
     def __init__(self, prg_banks: int, chr_banks: int):
         self.prg_banks = prg_banks
         self.chr_banks = chr_banks
+        self.reset()
 
     def map_cpu_read(self, addr: int) -> Tuple[int, int]: # (addr, value)
         pass
@@ -30,10 +31,10 @@ class Mapper():
         pass
 
     def mirror_mode(self) -> int:
-        pass
+        return MIRROR_HARDWARE
 
     def irq_state(self) -> bool:
-        pass
+        return False
 
     def irq_clear(self):
         pass
@@ -44,5 +45,6 @@ class Mapper():
 from nespy.mappers import *
 
 MAPPER_LOOKUP = {
+    0: Mapper0,
     1: Mapper1
 }
