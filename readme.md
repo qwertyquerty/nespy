@@ -4,9 +4,9 @@
 
 ### Feature Todo List:
 
-- [ ] CPU
+- [x] CPU
     - [x] All addressing modes implemented
-    - [ ] All instructions implemented
+    - [x] All instructions implemented
     - [x] All opcodes defined
 
 - [ ] ROM
