@@ -42,7 +42,7 @@ class Bus():
 
         cart_read = self.cartridge.cpu_read(addr)
 
-        if cart_read != None: # Cartridge address range
+        if cart_read is not None: # Cartridge address range
             # The cartridge can effectively trump any bus read using the mapper
             value = cart_read
 

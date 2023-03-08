@@ -82,7 +82,7 @@ class Cartridge():
     def cpu_read(self, addr: int) -> int:
         out = self.mapper.map_cpu_read(addr)
 
-        if out != None:
+        if out is not None:
             (mapped_addr, value) = out
 
             if mapped_addr != 0xFFFFFFFF:
@@ -95,7 +95,7 @@ class Cartridge():
     def cpu_write(self, addr: int, value: int) -> bool:
         mapped_addr = self.mapper.map_cpu_write(addr, value)
 
-        if mapped_addr != None:
+        if mapped_addr is not None:
             if mapped_addr != 0xFFFFFFFF:
                 self.prg_memory[mapped_addr] = value
             
@@ -106,7 +106,7 @@ class Cartridge():
     def ppu_read(self, addr: int):
         mapped_addr = self.mapper.map_ppu_read(addr)
 
-        if mapped_addr != None:
+        if mapped_addr is not None:
             return self.chr_memory[mapped_addr]
         
         return None
@@ -114,7 +114,7 @@ class Cartridge():
     def ppu_write(self, addr: int, value: int) -> bool:
         mapped_addr = self.mapper.map_ppu_write(addr)
 
-        if mapped_addr != None:
+        if mapped_addr is not None:
             self.chr_memory[mapped_addr] = value
             return True
         

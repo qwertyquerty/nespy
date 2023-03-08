@@ -1,45 +1,23 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING, Callable
-
-if TYPE_CHECKING:
-    from nespy.cmp_6502 import Cmp6502
-
 from nespy.instructions import *
 from nespy.addr_modes import *
 
-class Operation():
-    def __init__(self, name: str = "???", instruction: Callable = None, addr_mode: Callable = None, cycles: int = 0):
-        self.name = name
-        self.addr_mode = addr_mode
-        self.instruction = instruction
-        self.cycles = cycles
-    
-    def run(self, cpu: Cmp6502):
-        # set some util information that the instructions might use for special cases
-        cpu.addr_mode = self.addr_mode
-
-        extra_cycle = (self.addr_mode(cpu) & (self.instruction(cpu) if self.instruction else 0))
-
-        cpu.cycles += self.cycles + extra_cycle
-
 NUL = None
 
-OPCODE_LOOKUP = [
-    Operation("BRK", BRK, IMM, 7),Operation("ORA", ORA, IZX, 6),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("???", NOP, IMP, 3),Operation("ORA", ORA, ZP0, 3),Operation("ASL", ASL, ZP0, 5),Operation("???", NUL, IMP, 5),Operation("PHP", PHP, IMP, 3),Operation("ORA", ORA, IMM, 2),Operation("ASL", ASL, IMP, 2),Operation("???", NUL, IMP, 2),Operation("???", NOP, IMP, 4),Operation("ORA", ORA, ABS, 4),Operation("ASL", ASL, ABS, 6),Operation("???", NUL, IMP, 6),
-    Operation("BPL", BPL, REL, 2),Operation("ORA", ORA, IZY, 5),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("???", NOP, IMP, 4),Operation("ORA", ORA, ZPX, 4),Operation("ASL", ASL, ZPX, 6),Operation("???", NUL, IMP, 6),Operation("CLC", CLC, IMP, 2),Operation("ORA", ORA, ABY, 4),Operation("???", NOP, IMP, 2),Operation("???", NUL, IMP, 7),Operation("???", NOP, IMP, 4),Operation("ORA", ORA, ABX, 4),Operation("ASL", ASL, ABX, 7),Operation("???", NUL, IMP, 7),
-    Operation("JSR", JSR, ABS, 6),Operation("AND", AND, IZX, 6),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("BIT", BIT, ZP0, 3),Operation("AND", AND, ZP0, 3),Operation("ROL", ROL, ZP0, 5),Operation("???", NUL, IMP, 5),Operation("PLP", PLP, IMP, 4),Operation("AND", AND, IMM, 2),Operation("ROL", ROL, IMP, 2),Operation("???", NUL, IMP, 2),Operation("BIT", BIT, ABS, 4),Operation("AND", AND, ABS, 4),Operation("ROL", ROL, ABS, 6),Operation("???", NUL, IMP, 6),
-    Operation("BMI", BMI, REL, 2),Operation("AND", AND, IZY, 5),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("???", NOP, IMP, 4),Operation("AND", AND, ZPX, 4),Operation("ROL", ROL, ZPX, 6),Operation("???", NUL, IMP, 6),Operation("SEC", SEC, IMP, 2),Operation("AND", AND, ABY, 4),Operation("???", NOP, IMP, 2),Operation("???", NUL, IMP, 7),Operation("???", NOP, IMP, 4),Operation("AND", AND, ABX, 4),Operation("ROL", ROL, ABX, 7),Operation("???", NUL, IMP, 7),
-    Operation("RTI", RTI, IMP, 6),Operation("EOR", EOR, IZX, 6),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("???", NOP, IMP, 3),Operation("EOR", EOR, ZP0, 3),Operation("LSR", LSR, ZP0, 5),Operation("???", NUL, IMP, 5),Operation("PHA", PHA, IMP, 3),Operation("EOR", EOR, IMM, 2),Operation("LSR", LSR, IMP, 2),Operation("???", NUL, IMP, 2),Operation("JMP", JMP, ABS, 3),Operation("EOR", EOR, ABS, 4),Operation("LSR", LSR, ABS, 6),Operation("???", NUL, IMP, 6),
-    Operation("BVC", BVC, REL, 2),Operation("EOR", EOR, IZY, 5),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("???", NOP, IMP, 4),Operation("EOR", EOR, ZPX, 4),Operation("LSR", LSR, ZPX, 6),Operation("???", NUL, IMP, 6),Operation("CLI", CLI, IMP, 2),Operation("EOR", EOR, ABY, 4),Operation("???", NOP, IMP, 2),Operation("???", NUL, IMP, 7),Operation("???", NOP, IMP, 4),Operation("EOR", EOR, ABX, 4),Operation("LSR", LSR, ABX, 7),Operation("???", NUL, IMP, 7),
-    Operation("RTS", RTS, IMP, 6),Operation("ADC", ADC, IZX, 6),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("???", NOP, IMP, 3),Operation("ADC", ADC, ZP0, 3),Operation("ROR", ROR, ZP0, 5),Operation("???", NUL, IMP, 5),Operation("PLA", PLA, IMP, 4),Operation("ADC", ADC, IMM, 2),Operation("ROR", ROR, IMP, 2),Operation("???", NUL, IMP, 2),Operation("JMP", JMP, IND, 5),Operation("ADC", ADC, ABS, 4),Operation("ROR", ROR, ABS, 6),Operation("???", NUL, IMP, 6),
-    Operation("BVS", BVS, REL, 2),Operation("ADC", ADC, IZY, 5),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("???", NOP, IMP, 4),Operation("ADC", ADC, ZPX, 4),Operation("ROR", ROR, ZPX, 6),Operation("???", NUL, IMP, 6),Operation("SEI", SEI, IMP, 2),Operation("ADC", ADC, ABY, 4),Operation("???", NOP, IMP, 2),Operation("???", NUL, IMP, 7),Operation("???", NOP, IMP, 4),Operation("ADC", ADC, ABX, 4),Operation("ROR", ROR, ABX, 7),Operation("???", NUL, IMP, 7),
-    Operation("???", NOP, IMP, 2),Operation("STA", STA, IZX, 6),Operation("???", NOP, IMP, 2),Operation("???", NUL, IMP, 6),Operation("STY", STY, ZP0, 3),Operation("STA", STA, ZP0, 3),Operation("STX", STX, ZP0, 3),Operation("???", NUL, IMP, 3),Operation("DEY", DEY, IMP, 2),Operation("???", NOP, IMP, 2),Operation("TXA", TXA, IMP, 2),Operation("???", NUL, IMP, 2),Operation("STY", STY, ABS, 4),Operation("STA", STA, ABS, 4),Operation("STX", STX, ABS, 4),Operation("???", NUL, IMP, 4),
-    Operation("BCC", BCC, REL, 2),Operation("STA", STA, IZY, 6),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 6),Operation("STY", STY, ZPX, 4),Operation("STA", STA, ZPX, 4),Operation("STX", STX, ZPY, 4),Operation("???", NUL, IMP, 4),Operation("TYA", TYA, IMP, 2),Operation("STA", STA, ABY, 5),Operation("TXS", TXS, IMP, 2),Operation("???", NUL, IMP, 5),Operation("???", NOP, IMP, 5),Operation("STA", STA, ABX, 5),Operation("???", NUL, IMP, 5),Operation("???", NUL, IMP, 5),
-    Operation("LDY", LDY, IMM, 2),Operation("LDA", LDA, IZX, 6),Operation("LDX", LDX, IMM, 2),Operation("???", NUL, IMP, 6),Operation("LDY", LDY, ZP0, 3),Operation("LDA", LDA, ZP0, 3),Operation("LDX", LDX, ZP0, 3),Operation("???", NUL, IMP, 3),Operation("TAY", TAY, IMP, 2),Operation("LDA", LDA, IMM, 2),Operation("TAX", TAX, IMP, 2),Operation("???", NUL, IMP, 2),Operation("LDY", LDY, ABS, 4),Operation("LDA", LDA, ABS, 4),Operation("LDX", LDX, ABS, 4),Operation("???", NUL, IMP, 4),
-    Operation("BCS", BCS, REL, 2),Operation("LDA", LDA, IZY, 5),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 5),Operation("LDY", LDY, ZPX, 4),Operation("LDA", LDA, ZPX, 4),Operation("LDX", LDX, ZPY, 4),Operation("???", NUL, IMP, 4),Operation("CLV", CLV, IMP, 2),Operation("LDA", LDA, ABY, 4),Operation("TSX", TSX, IMP, 2),Operation("???", NUL, IMP, 4),Operation("LDY", LDY, ABX, 4),Operation("LDA", LDA, ABX, 4),Operation("LDX", LDX, ABY, 4),Operation("???", NUL, IMP, 4),
-    Operation("CPY", CPY, IMM, 2),Operation("CMP", CMP, IZX, 6),Operation("???", NOP, IMP, 2),Operation("???", NUL, IMP, 8),Operation("CPY", CPY, ZP0, 3),Operation("CMP", CMP, ZP0, 3),Operation("DEC", DEC, ZP0, 5),Operation("???", NUL, IMP, 5),Operation("INY", INY, IMP, 2),Operation("CMP", CMP, IMM, 2),Operation("DEX", DEX, IMP, 2),Operation("???", NUL, IMP, 2),Operation("CPY", CPY, ABS, 4),Operation("CMP", CMP, ABS, 4),Operation("DEC", DEC, ABS, 6),Operation("???", NUL, IMP, 6),
-    Operation("BNE", BNE, REL, 2),Operation("CMP", CMP, IZY, 5),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("???", NOP, IMP, 4),Operation("CMP", CMP, ZPX, 4),Operation("DEC", DEC, ZPX, 6),Operation("???", NUL, IMP, 6),Operation("CLD", CLD, IMP, 2),Operation("CMP", CMP, ABY, 4),Operation("NOP", NOP, IMP, 2),Operation("???", NUL, IMP, 7),Operation("???", NOP, IMP, 4),Operation("CMP", CMP, ABX, 4),Operation("DEC", DEC, ABX, 7),Operation("???", NUL, IMP, 7),
-    Operation("CPX", CPX, IMM, 2),Operation("SBC", SBC, IZX, 6),Operation("???", NOP, IMP, 2),Operation("???", NUL, IMP, 8),Operation("CPX", CPX, ZP0, 3),Operation("SBC", SBC, ZP0, 3),Operation("INC", INC, ZP0, 5),Operation("???", NUL, IMP, 5),Operation("INX", INX, IMP, 2),Operation("SBC", SBC, IMM, 2),Operation("NOP", NOP, IMP, 2),Operation("???", SBC, IMP, 2),Operation("CPX", CPX, ABS, 4),Operation("SBC", SBC, ABS, 4),Operation("INC", INC, ABS, 6),Operation("???", NUL, IMP, 6),
-    Operation("BEQ", BEQ, REL, 2),Operation("SBC", SBC, IZY, 5),Operation("???", NUL, IMP, 2),Operation("???", NUL, IMP, 8),Operation("???", NOP, IMP, 4),Operation("SBC", SBC, ZPX, 4),Operation("INC", INC, ZPX, 6),Operation("???", NUL, IMP, 6),Operation("SED", SED, IMP, 2),Operation("SBC", SBC, ABY, 4),Operation("NOP", NOP, IMP, 2),Operation("???", NUL, IMP, 7),Operation("???", NOP, IMP, 4),Operation("SBC", SBC, ABX, 4),Operation("INC", INC, ABX, 7),Operation("???", NUL, IMP, 7),
-]
-
+OPCODE_LOOKUP = (
+    (BRK, IMM, 7),(ORA, IZX, 6),(NUL, IMP, 2),(NUL, IMP, 8),(NOP, IMP, 3),(ORA, ZP0, 3),(ASL, ZP0, 5),(NUL, IMP, 5),(PHP, IMP, 3),(ORA, IMM, 2),(ASL, IMP, 2),(NUL, IMP, 2),(NOP, IMP, 4),(ORA, ABS, 4),(ASL, ABS, 6),(NUL, IMP, 6),
+    (BPL, REL, 2),(ORA, IZY, 5),(NUL, IMP, 2),(NUL, IMP, 8),(NOP, IMP, 4),(ORA, ZPX, 4),(ASL, ZPX, 6),(NUL, IMP, 6),(CLC, IMP, 2),(ORA, ABY, 4),(NOP, IMP, 2),(NUL, IMP, 7),(NOP, IMP, 4),(ORA, ABX, 4),(ASL, ABX, 7),(NUL, IMP, 7),
+    (JSR, ABS, 6),(AND, IZX, 6),(NUL, IMP, 2),(NUL, IMP, 8),(BIT, ZP0, 3),(AND, ZP0, 3),(ROL, ZP0, 5),(NUL, IMP, 5),(PLP, IMP, 4),(AND, IMM, 2),(ROL, IMP, 2),(NUL, IMP, 2),(BIT, ABS, 4),(AND, ABS, 4),(ROL, ABS, 6),(NUL, IMP, 6),
+    (BMI, REL, 2),(AND, IZY, 5),(NUL, IMP, 2),(NUL, IMP, 8),(NOP, IMP, 4),(AND, ZPX, 4),(ROL, ZPX, 6),(NUL, IMP, 6),(SEC, IMP, 2),(AND, ABY, 4),(NOP, IMP, 2),(NUL, IMP, 7),(NOP, IMP, 4),(AND, ABX, 4),(ROL, ABX, 7),(NUL, IMP, 7),
+    (RTI, IMP, 6),(EOR, IZX, 6),(NUL, IMP, 2),(NUL, IMP, 8),(NOP, IMP, 3),(EOR, ZP0, 3),(LSR, ZP0, 5),(NUL, IMP, 5),(PHA, IMP, 3),(EOR, IMM, 2),(LSR, IMP, 2),(NUL, IMP, 2),(JMP, ABS, 3),(EOR, ABS, 4),(LSR, ABS, 6),(NUL, IMP, 6),
+    (BVC, REL, 2),(EOR, IZY, 5),(NUL, IMP, 2),(NUL, IMP, 8),(NOP, IMP, 4),(EOR, ZPX, 4),(LSR, ZPX, 6),(NUL, IMP, 6),(CLI, IMP, 2),(EOR, ABY, 4),(NOP, IMP, 2),(NUL, IMP, 7),(NOP, IMP, 4),(EOR, ABX, 4),(LSR, ABX, 7),(NUL, IMP, 7),
+    (RTS, IMP, 6),(ADC, IZX, 6),(NUL, IMP, 2),(NUL, IMP, 8),(NOP, IMP, 3),(ADC, ZP0, 3),(ROR, ZP0, 5),(NUL, IMP, 5),(PLA, IMP, 4),(ADC, IMM, 2),(ROR, IMP, 2),(NUL, IMP, 2),(JMP, IND, 5),(ADC, ABS, 4),(ROR, ABS, 6),(NUL, IMP, 6),
+    (BVS, REL, 2),(ADC, IZY, 5),(NUL, IMP, 2),(NUL, IMP, 8),(NOP, IMP, 4),(ADC, ZPX, 4),(ROR, ZPX, 6),(NUL, IMP, 6),(SEI, IMP, 2),(ADC, ABY, 4),(NOP, IMP, 2),(NUL, IMP, 7),(NOP, IMP, 4),(ADC, ABX, 4),(ROR, ABX, 7),(NUL, IMP, 7),
+    (NOP, IMP, 2),(STA, IZX, 6),(NOP, IMP, 2),(NUL, IMP, 6),(STY, ZP0, 3),(STA, ZP0, 3),(STX, ZP0, 3),(NUL, IMP, 3),(DEY, IMP, 2),(NOP, IMP, 2),(TXA, IMP, 2),(NUL, IMP, 2),(STY, ABS, 4),(STA, ABS, 4),(STX, ABS, 4),(NUL, IMP, 4),
+    (BCC, REL, 2),(STA, IZY, 6),(NUL, IMP, 2),(NUL, IMP, 6),(STY, ZPX, 4),(STA, ZPX, 4),(STX, ZPY, 4),(NUL, IMP, 4),(TYA, IMP, 2),(STA, ABY, 5),(TXS, IMP, 2),(NUL, IMP, 5),(NOP, IMP, 5),(STA, ABX, 5),(NUL, IMP, 5),(NUL, IMP, 5),
+    (LDY, IMM, 2),(LDA, IZX, 6),(LDX, IMM, 2),(NUL, IMP, 6),(LDY, ZP0, 3),(LDA, ZP0, 3),(LDX, ZP0, 3),(NUL, IMP, 3),(TAY, IMP, 2),(LDA, IMM, 2),(TAX, IMP, 2),(NUL, IMP, 2),(LDY, ABS, 4),(LDA, ABS, 4),(LDX, ABS, 4),(NUL, IMP, 4),
+    (BCS, REL, 2),(LDA, IZY, 5),(NUL, IMP, 2),(NUL, IMP, 5),(LDY, ZPX, 4),(LDA, ZPX, 4),(LDX, ZPY, 4),(NUL, IMP, 4),(CLV, IMP, 2),(LDA, ABY, 4),(TSX, IMP, 2),(NUL, IMP, 4),(LDY, ABX, 4),(LDA, ABX, 4),(LDX, ABY, 4),(NUL, IMP, 4),
+    (CPY, IMM, 2),(CMP, IZX, 6),(NOP, IMP, 2),(NUL, IMP, 8),(CPY, ZP0, 3),(CMP, ZP0, 3),(DEC, ZP0, 5),(NUL, IMP, 5),(INY, IMP, 2),(CMP, IMM, 2),(DEX, IMP, 2),(NUL, IMP, 2),(CPY, ABS, 4),(CMP, ABS, 4),(DEC, ABS, 6),(NUL, IMP, 6),
+    (BNE, REL, 2),(CMP, IZY, 5),(NUL, IMP, 2),(NUL, IMP, 8),(NOP, IMP, 4),(CMP, ZPX, 4),(DEC, ZPX, 6),(NUL, IMP, 6),(CLD, IMP, 2),(CMP, ABY, 4),(NOP, IMP, 2),(NUL, IMP, 7),(NOP, IMP, 4),(CMP, ABX, 4),(DEC, ABX, 7),(NUL, IMP, 7),
+    (CPX, IMM, 2),(SBC, IZX, 6),(NOP, IMP, 2),(NUL, IMP, 8),(CPX, ZP0, 3),(SBC, ZP0, 3),(INC, ZP0, 5),(NUL, IMP, 5),(INX, IMP, 2),(SBC, IMM, 2),(NOP, IMP, 2),(SBC, IMP, 2),(CPX, ABS, 4),(SBC, ABS, 4),(INC, ABS, 6),(NUL, IMP, 6),
+    (BEQ, REL, 2),(SBC, IZY, 5),(NUL, IMP, 2),(NUL, IMP, 8),(NOP, IMP, 4),(SBC, ZPX, 4),(INC, ZPX, 6),(NUL, IMP, 6),(SED, IMP, 2),(SBC, ABY, 4),(NOP, IMP, 2),(NUL, IMP, 7),(NOP, IMP, 4),(SBC, ABX, 4),(INC, ABX, 7),(NUL, IMP, 7),
+)

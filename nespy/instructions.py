@@ -243,7 +243,7 @@ def LDY(cpu: Cmp6502) -> int:
 
 def NOP(cpu: Cmp6502) -> None:
     # NOP has weird behavior on specific opcodes where it has potential to add a cycle on page boundary, specicaly on any ABX opcodes
-    if cpu.addr_mode == ABX:
+    if cpu.addr_mode is ABX:
         return 1
 
     return 0

@@ -29,7 +29,7 @@ class Cmp6502():
         self.bus = bus
     
     def fetch(self) -> int:
-        if self.addr_mode != IMP:
+        if self.addr_mode is not IMP:
             self.fetched = self.bus.read(self.addr_abs)
     
     def set_flag(self, flag: int, val: bool):
@@ -46,7 +46,11 @@ class Cmp6502():
 
             self.pc = (self.pc + 1) & 0xFFFF # increment program counter in bounds
 
-            OPCODE_LOOKUP[self.opcode].run(self) # look up the instruction from the opcode lookup table, run it
+            instruction, addr_mode, cycles = OPCODE_LOOKUP[self.opcode] # look up the instruction from the opcode lookup table
+            self.addr_mode = addr_mode
+            
+            extra_cycle = ((addr_mode(self)) & (instruction(self) if instruction is not None else 0))
+            self.cycles += cycles + extra_cycle
 
             self.status |= U # for some reason this needs to be true
 

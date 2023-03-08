@@ -19,7 +19,7 @@ class Mapper1(Mapper):
 
     mirroring: int = MIRROR_HORIZONTAL
     
-    mirroring_cases: list = [MIRROR_ONSCREEN_LO, MIRROR_ONSCREEN_HI, MIRROR_VERTICAL, MIRROR_HORIZONTAL]
+    mirroring_cases: tuple = (MIRROR_ONSCREEN_LO, MIRROR_ONSCREEN_HI, MIRROR_VERTICAL, MIRROR_HORIZONTAL)
 
     def __init__(self):
         self.ram_static = [0x00 for i in range(0x8000)]
