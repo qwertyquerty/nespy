@@ -23,9 +23,13 @@
 - [ ] APU
 
 - [ ] BUS
+    - [ ] Interrupts
     - [ ] Proper read/write direction
+    - [x] CPU connection
     - [ ] PPU connection
+    - [ ] APU connection
     - [ ] Controller inputs
+    - [x] DMA
 
 - [ ] Features
     - [ ] Pause / resume
