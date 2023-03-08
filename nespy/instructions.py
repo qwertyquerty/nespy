@@ -373,65 +373,73 @@ def BIT(cpu: Cmp6502) -> int:
 
     return 0
 
-def BCC(cpu: Cmp6502) -> int: 
-    cpu.cycles += 2
-    if(cpu.flags.C == 0): 
+def BCC(cpu: Cmp6502) -> int:
+    if (cpu.status & cpu.flags.C) == 0: 
         cpu.cycles += 1
         if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
             cpu.cycles += 1
+    
+    return 0
 
 
-def BCS(cpu: Cmp6502) -> int: 
-    cpu.cycles += 2
-    if(cpu.flags.C == 1): 
+def BCS(cpu: Cmp6502) -> int:
+    if cpu.status & cpu.flags.C: 
         cpu.cycles += 1
         if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
             cpu.cycles += 1
+    
+    return 0
 
 
-def BEQ(cpu: Cmp6502) -> int: 
-    cpu.cycles += 2
-    if(cpu.flags.Z == 1): 
+def BEQ(cpu: Cmp6502) -> int:
+    if cpu.status & cpu.flags.Z: 
         cpu.cycles += 1
         if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
             cpu.cycles += 1
+    
+    return 0
 
 
-def BNE(cpu: Cmp6502) -> int: 
-    cpu.cycles += 2
-    if(cpu.flags.Z == 0): 
+def BNE(cpu: Cmp6502) -> int:
+    if (cpu.status & cpu.flags.Z) == 0: 
         cpu.cycles += 1
         if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
             cpu.cycles += 1
+    
+    return 0
 
 
-def BVC(cpu: Cmp6502) -> int: 
-    cpu.cycles += 2
-    if(cpu.flags.V == 0): 
+def BVC(cpu: Cmp6502) -> int:
+    if (cpu.status & cpu.flags.V) == 0: 
         cpu.cycles += 1
         if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
             cpu.cycles += 1
+    
+    return 0
 
 
-def BVS(cpu: Cmp6502) -> int: 
-    cpu.cycles += 2
-    if(cpu.flags.V == 1): 
+def BVC(cpu: Cmp6502) -> int:
+    if cpu.status & cpu.flags.V: 
         cpu.cycles += 1
         if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
             cpu.cycles += 1
+    
+    return 0
 
 
-def BPL(cpu: Cmp6502) -> int: 
-    cpu.cycles += 2
-    if(cpu.flags.N == 0): 
+def BPL(cpu: Cmp6502) -> int:
+    if (cpu.status & cpu.flags.N) == 0: 
         cpu.cycles += 1
         if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
             cpu.cycles += 1
+    
+    return 0
 
 
-def BMI(cpu: Cmp6502) -> int: 
-    cpu.cycles += 2
-    if(cpu.flags.N == 1): 
+def BMI(cpu: Cmp6502) -> int:
+    if cpu.status & cpu.flags.N: 
         cpu.cycles += 1
         if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
             cpu.cycles += 1
+    
+    return 0
