@@ -6,3 +6,9 @@ B = (1 << 4) # break
 U = (1 << 5) # unused
 V = (1 << 6) # overflow
 N = (1 << 7) # negative
+
+MIRROR_HARDWARE = 1
+MIRROR_HORIZONTAL = 2
+MIRROR_VERTICAL = 3
+MIRROR_ONSCREEN_LO = 4
+MIRROR_ONSCREEN_HI = 5

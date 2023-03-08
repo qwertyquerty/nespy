@@ -1,6 +1,7 @@
 from typing import Tuple
 
 from nespy.mapper import *
+from nespy.const import *
 
 class Mapper0(Mapper):
     def map_cpu_read(self, addr: int) -> Tuple[int, int]: # (addr, value)

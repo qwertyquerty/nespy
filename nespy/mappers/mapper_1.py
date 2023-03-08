@@ -1,6 +1,7 @@
 from typing import Tuple
 
 from nespy.mapper import *
+from nespy.const import *
 
 class Mapper1(Mapper):
     chr_bank_select_lnib: int = 0x0
@@ -23,7 +24,7 @@ class Mapper1(Mapper):
 
     def __init__(self, prg_banks: int, chr_banks: int):
         super().__init__(prg_banks, chr_banks)
-        
+
         self.ram_static = [0x00 for i in range(0x8000)]
 
     def map_cpu_read(self, addr: int) -> Tuple[int, int]: # (addr, value)

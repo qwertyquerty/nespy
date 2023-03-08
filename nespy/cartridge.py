@@ -1,6 +1,7 @@
 import io
 
 from nespy.mapper import *
+from nespy.const import *
 
 class Cartridge():
     mapper: Mapper = None

@@ -1,10 +1,6 @@
 from typing import Tuple
 
-MIRROR_HARDWARE = 1
-MIRROR_HORIZONTAL = 2
-MIRROR_VERTICAL = 3
-MIRROR_ONSCREEN_LO = 4
-MIRROR_ONSCREEN_HI = 5
+from nespy.const import *
 
 class Mapper():
     prg_banks: int = 0

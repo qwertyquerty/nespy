@@ -6,7 +6,7 @@ from nespy.operations import OPCODE_LOOKUP
 
 def main():
     nes = Bus()
-    cart = Cartridge("./roms/all_instrs.nes")
+    cart = Cartridge("./roms/zelda.nes")
     nes.plug_cartridge(cart)
     nes.reset()
 
