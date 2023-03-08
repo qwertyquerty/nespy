@@ -10,7 +10,7 @@
     - [x] All opcodes defined
 
 - [ ] ROM
-    - [ ] Reading
+    - [x] Reading
     - [ ] Mappers
     - [ ] Game saves
 
