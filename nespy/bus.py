@@ -37,7 +37,7 @@ class Bus():
         self.cartridge = cart
 
 
-    def read(self, addr: int, read_only: bool):
+    def read(self, addr: int, read_only: bool = False):
         value = 0x00
 
         cart_read = self.cartridge.cpu_read(addr)
@@ -61,6 +61,8 @@ class Bus():
         return value
 
     def write(self, addr: int, value: int):
+        value &= 0xFF # bounds checking
+
         if self.cartridge.cpu_write(addr, value): # cartridge mapper can trump any write
             pass
 

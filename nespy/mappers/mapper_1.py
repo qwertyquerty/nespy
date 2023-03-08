@@ -78,12 +78,11 @@ class Mapper1(Mapper):
                         else:
                             self.chr_bank_select = self.load_register & 0x1E
                     
-                    elif target_register == 2:
-                        if self.control_register & 0x10:
-                            self.chr_bank_select_hnib = self.load_register & 0x1F
+                    elif target_register == 2 and self.control_register & 0x10:
+                        self.chr_bank_select_hnib = self.load_register & 0x1F
 
                     elif target_register == 3:
-                        prg_mode =  (self.control_register >> 2) & 0x03
+                        prg_mode = (self.control_register >> 2) & 0x03
 
                         if prg_mode == 0 or prg_mode == 1:
                             # Set 32K PRG Bank at CPU 0x8000
@@ -107,14 +106,14 @@ class Mapper1(Mapper):
         return None
 
     def map_ppu_read(self, addr: int) -> int: # addr
-        if 0x0000 <= addr <= 0x1FFF:
+        if addr <= 0x1FFF:
             if self.chr_banks == 0:
                 return addr
             
             else:
                 if self.control_register & 0x10:
                     # 4K CHR Bank Mode    
-                    if 0x0000 <= addr <= 0x0FFF:
+                    if addr <= 0x0FFF:
                         return self.chr_bank_select_lnib * 0x1000 + (addr & 0x0FFF)
                     
                     elif 0x1000 <= addr <= 0x1FFF:
@@ -127,7 +126,7 @@ class Mapper1(Mapper):
         return None
 
     def map_ppu_write(self, addr: int) -> int: # addr
-        if 0x0000 <= addr <= 0x1FFF:
+        if addr <= 0x1FFF:
             if self.chr_banks == 0:
                 return addr
             
