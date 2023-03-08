@@ -418,7 +418,7 @@ def BVC(cpu: Cmp6502) -> int:
     return 0
 
 
-def BVC(cpu: Cmp6502) -> int:
+def BVS(cpu: Cmp6502) -> int:
     if cpu.status & cpu.flags.V: 
         cpu.cycles += 1
         if (cpu.addr_abs & 0xFF00) != (cpu.pc & 0xFF00):
