@@ -12,7 +12,9 @@
 - [ ] ROM
     - [x] Reading
     - [ ] Mappers
-    - [ ] Game saves
+        - [ ] Abstract mapper
+        - [ ] All mappers
+    - [x] Game saves (writing)
 
 - [ ] PPU
     - [ ] SDL setup
