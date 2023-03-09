@@ -63,7 +63,7 @@ class Mapper1(Mapper):
             
             else:
                 # load value into left of load register
-                self.load_register = (self.load_register >> 1) | (value & 0x01 << 4)
+                self.load_register = (self.load_register >> 1) | ((value & 0x01) << 4)
                 self.load_register_count += 1
 
                 if self.load_register_count == 5:
@@ -80,7 +80,7 @@ class Mapper1(Mapper):
                         else:
                             self.chr_bank_select = self.load_register & 0x1E
                     
-                    elif target_register == 2 and self.control_register & 0x10:
+                    elif target_register == 2 and (self.control_register & 0x10):
                         self.chr_bank_select_hnib = self.load_register & 0x1F
 
                     elif target_register == 3:
@@ -100,7 +100,7 @@ class Mapper1(Mapper):
                             # Set 16KB PRG Bank at CPU 0x8000
                             self.prg_bank_select_lwrd = self.load_register & 0x0F
                             # Fix 16KB PRG Bank at CPU 0xC000 to Last Bank
-                            self.prg_bank_select_hwrd = self.prg_banks - 1
+                            self.prg_bank_select_hwrd = (self.prg_banks - 1) & 0xFFFF
                 
                     self.load_register = 0x00
                     self.load_register_count = 0
@@ -116,14 +116,14 @@ class Mapper1(Mapper):
                 if self.control_register & 0x10:
                     # 4K CHR Bank Mode    
                     if addr <= 0x0FFF:
-                        return self.chr_bank_select_lnib * 0x1000 + (addr & 0x0FFF)
+                        return (self.chr_bank_select_lnib * 0x1000 + (addr & 0x0FFF)) & 0xFFFF
                     
                     elif 0x1000 <= addr <= 0x1FFF:
-                        return self.chr_bank_select_hnib * 0x1000 + (addr & 0x0FFF)
+                        return (self.chr_bank_select_hnib * 0x1000 + (addr & 0x0FFF)) & 0xFFFF
                     
                 else:
                     # 8K CHR Bank Mode
-                    return self.chr_bank_select * 0x2000 + (addr & 0x1FFF)
+                    return (self.chr_bank_select * 0x2000 + (addr & 0x1FFF)) & 0xFFFF
         
         return None
 

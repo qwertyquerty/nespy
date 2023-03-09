@@ -2,6 +2,8 @@ from nespy.cmp_2C02 import Cmp2C02
 from nespy.cmp_6502 import Cmp6502
 from nespy.cartridge import Cartridge
 
+import pygame as pg
+
 class Bus():
     cpu: Cmp6502 = None
     ram: list = None
@@ -13,12 +15,15 @@ class Bus():
     dma_addr: int = 0x00
     dma_value: int = 0x00 
     dma_enable: bool = False # are we currently running a DMA
-    dma_wait: bool = False # set this to make sure the DMA only starts on an even cycle
+    dma_wait: bool = True # set this to make sure the DMA only starts on an even cycle
+
+    controller_states: list = None
 
     def __init__(self):
         self.cpu = Cmp6502(self)
         self.ppu = Cmp2C02(self)
         self.ram = [0x00 for i in range(0x0800)]
+        self.controller_state = [0x00, 0x00]
     
     def reset(self):
         if self.cartridge:
@@ -28,12 +33,12 @@ class Bus():
         self.ppu.reset()
         self.ram = [0x00 for i in range(0x0800)]
 
-        self.bus_cycle = 0
+        self.system_clock_count = 0
 
         self.dma_page = 0x00
         self.dma_addr = 0x00
         self.dma_value = 0x00
-        self.dma_enable = 0x00
+        self.dma_wait = True
         self.dma_enable = False
     
     def plug_cartridge(self, cart: Cartridge):
@@ -59,7 +64,11 @@ class Bus():
             pass # TODO: read APU status
 
         elif 0x4016 <= addr <= 0x4017: # both plugged in controllers
-            pass # TODO: read from controllers
+            value = (self.controller_state[addr & 0x0001] & 0x80) > 0
+            self.controller_state[addr & 0x0001] = (self.controller_state[addr & 0x0001] << 1) & 0xFF
+
+        if value is None:
+            print("NONE", self.cpu.pc, self.cpu.a, self.cpu.opcode)
 
         return value
 
@@ -84,7 +93,14 @@ class Bus():
             self.dma_enable = True
         
         elif 0x4016 <= addr <= 0x4017: # both plugged in controllers
-            pass # TODO: lock in controller state
+            keys = pg.key.get_pressed()
+
+            controllers = (
+                keys[pg.K_RIGHT] | (keys[pg.K_LEFT] << 1) | (keys[pg.K_DOWN] << 2) | (keys[pg.K_UP] << 3) | (keys[pg.K_s] << 4) | (keys[pg.K_a] << 5) | (keys[pg.K_x] << 6) | (keys[pg.K_z] << 7),
+                0x00
+            )
+
+            self.controller_state[addr & 0x0001] = controllers[addr & 0x0001]
 
     def clock(self):
         self.ppu.clock()
@@ -103,7 +119,8 @@ class Bus():
                         self.dma_value = self.read((self.dma_page << 8) | self.dma_addr)
                     
                     else:
-                        # TODO: write to PPA OAM here
+                        self.ppu.oam[self.dma_addr] = self.dma_value
+
                         self.dma_addr = (self.dma_addr + 1) & 0xFF
 
                         if self.dma_addr == 0x00:
@@ -121,7 +138,5 @@ class Bus():
         if self.cartridge.mapper.irq_state():
             self.cartridge.mapper.irq_clear()
             self.cpu.interrupt_request()
-
-        # TODO: Cartridge mapper IRQs
 
         self.system_clock_count += 1

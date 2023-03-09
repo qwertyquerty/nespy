@@ -11,26 +11,26 @@
 
 - [ ] ROM
     - [x] Reading
-    - [ ] Mappers
-        - [ ] Abstract mapper
+    - [x] Mappers
+        - [x] Abstract mapper
         - [ ] All mappers
     - [x] Game saves (writing)
 
 - [ ] PPU
-    - [ ] SDL setup
-    - [ ] Palletes
-    - [ ] Background sprites
+    - [x] SDL setup
+    - [x] Palletes
+    - [x] Background sprites
     - [ ] Foreground sprites
 
 - [ ] APU
 
 - [ ] BUS
-    - [ ] Interrupts
-    - [ ] Proper read/write direction
+    - [x] Interrupts
+    - [x] Proper read/write direction
     - [x] CPU connection
-    - [ ] PPU connection
+    - [x] PPU connection
     - [ ] APU connection
-    - [ ] Controller inputs
+    - [x] Controller inputs
     - [x] DMA
 
 - [ ] Features

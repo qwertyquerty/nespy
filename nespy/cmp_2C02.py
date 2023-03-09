@@ -38,6 +38,9 @@ class Cmp2C02():
     bg_shifter_attrib_lwrd: int = 0x0000
     bg_shifter_attrib_hwrd: int = 0x0000
 
+    oam_addr: int = 0x00
+    oam: list = 0x00
+
     status: int = 0x00
     mask: int = 0x00
     control: int = 0x00
@@ -59,6 +62,13 @@ class Cmp2C02():
             self.nametable_y = ((value & 0b10000000000) >> 10)
             self.coarse_y = ((value & 0b1111100000) >> 5)
             self.coarse_x = ((value & 0b11111) >> 0)
+    
+    @dataclass
+    class ObjectAttributeEntity:
+        y: int = 0x00
+        id: int = 0x00
+        attribute: int = 0x00
+        x: int = 0x00
 
     vram_addr: RamAddrRegister = None
     tram_addr: RamAddrRegister = None
@@ -77,6 +87,7 @@ class Cmp2C02():
         self.tbl_name = [[0x00 for j in range(1024)] for i in range(2)]
         self.tbl_pattern = [[0x00 for j in range(4096)] for i in range(2)]
         self.tbl_palette = [0x00 for i in range(32)]
+        self.oam = [0x00 for i in range(256)]
 
     def reset(self):
         self.fine_x = 0
@@ -97,6 +108,7 @@ class Cmp2C02():
         self.control = 0x00
         self.vram_addr.load(0x0000)
         self.tram_addr.load(0x000)
+        self.oam_addr = 0x00
 
     def cpu_read(self, addr: int, read_only: bool = False) -> int:
         value = 0x00
@@ -111,18 +123,20 @@ class Cmp2C02():
             pass
 
         if addr == 0x0004: # OAM data
-            pass
+            return self.oam[self.oam_addr]
 
         if addr == 0x0007:
             value = self.ppu_data_buffer
             self.ppu_data_buffer = self.ppu_read(self.vram_addr.pack())
 
-            if self.vram_addr >= 0x3F00:
+            if self.vram_addr.pack() >= 0x3F00:
                 value = self.ppu_data_buffer
             
-            self.vram_addr.load(self.vram_addr.pack() + (32 if self.control & INCREMENT_MODE else 1))
+            self.vram_addr.load(self.vram_addr.pack() + (32 if (self.control & INCREMENT_MODE) else 1))
         
             return value
+
+        return value
 
     def cpu_write(self, addr: int, value: int):
         if addr == 0x0000:
@@ -138,10 +152,14 @@ class Cmp2C02():
 
         if addr == 0x0002:
             pass # status
+
         if addr == 0x0003:
-            pass # OAM addr
+            self.oam_addr = value # OAM addr
+            return
+        
         if addr == 0x0004:
-            pass # OAM data
+            self.oam[self.oam_addr] = value
+            return
 
         if addr == 0x0005:
             # scroll
@@ -321,7 +339,7 @@ class Cmp2C02():
 
     def update_shifters(self):
         if self.mask & RENDER_BACKGROUND:
-            self.bg_shifter_pattern_lwrd = (self.bg_shifter_attrib_lwrd << 1) & 0xFFFF
+            self.bg_shifter_pattern_lwrd = (self.bg_shifter_pattern_lwrd << 1) & 0xFFFF
             self.bg_shifter_pattern_hwrd = (self.bg_shifter_pattern_hwrd << 1) & 0xFFFF
             self.bg_shifter_attrib_lwrd = (self.bg_shifter_attrib_lwrd << 1) & 0xFFFF
             self.bg_shifter_attrib_hwrd = (self.bg_shifter_attrib_hwrd << 1) & 0xFFFF
@@ -332,10 +350,10 @@ class Cmp2C02():
             if self.scanline == 0 and self.cycle == 0:
                 self.cycle = 1
             
-            elif self.scanline == -1 and self.cycle == 1:
+            if self.scanline == -1 and self.cycle == 1:
                 self.status &= ~VERTICAL_BLANK
             
-            elif (2 <= self.cycle < 258) or (321 <= self.cycle < 338):
+            if (2 <= self.cycle < 258) or (321 <= self.cycle < 338):
                 self.update_shifters()
 
                 k = (self.cycle - 1) % 8
@@ -354,10 +372,10 @@ class Cmp2C02():
                     self.bg_next_tile_attrib &= 0x03
 
                 elif k == 4:
-                    self.bg_next_tile_lsb = self.ppu_read((bool(self.control & PATTERN_BACKGROUND) << 12) + (self.bg_next_tile_id << 4) + self.vram_addr.fine_y)
+                    self.bg_next_tile_lsb = self.ppu_read((bool(self.control & PATTERN_BACKGROUND) << 12) + (self.bg_next_tile_id << 4) + self.vram_addr.fine_y) & 0xFF
 
                 elif k == 6:
-                    self.bg_next_tile_msb = self.ppu_read((bool(self.control & PATTERN_BACKGROUND) << 12) + (self.bg_next_tile_id << 4) + self.vram_addr.fine_y + 8)
+                    self.bg_next_tile_msb = self.ppu_read((bool(self.control & PATTERN_BACKGROUND) << 12) + (self.bg_next_tile_id << 4) + self.vram_addr.fine_y + 8) & 0xFF
 
                 elif k == 7:
                     self.increment_scroll_x()
@@ -365,11 +383,11 @@ class Cmp2C02():
             if self.cycle == 256:
                 self.increment_scroll_y()
     
-            elif self.cycle == 257:
+            if self.cycle == 257:
                 self.load_background_shifters()
                 self.transfer_address_x()
             
-            elif self.cycle == 338 or self.cycle == 340:
+            if self.cycle == 338 or self.cycle == 340:
                 self.bg_next_tile_id = self.ppu_read(0x2000 | (self.vram_addr.pack() & 0x0FFF))
 
             if self.scanline == -1 and (280 <= self.cycle < 305):

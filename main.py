@@ -1,12 +1,17 @@
 import cProfile
 
+import pygame as pg
+
 from nespy.bus import Bus
 from nespy.cartridge import Cartridge
 from nespy.operations import OPCODE_LOOKUP
 
+pg.display.set_caption("NESPY")
+pg.display.set_icon(pg.Surface((16,16)))
+
 def main():
     nes = Bus()
-    cart = Cartridge("./roms/bomberman.nes")
+    cart = Cartridge("./roms/cpu.nes")
     nes.plug_cartridge(cart)
     nes.reset()
 
@@ -14,10 +19,15 @@ def main():
     start = time.time()
     time.sleep(0.01)
 
+    print(cart.mapper)
+
     while True:
-        if (nes.cpu.clock_count & 0xFFFFF) == 0:
+        if (nes.cpu.clock_count & 0xFFFF) == 0:
             print(int(nes.cpu.clock_count / (time.time() - start)), "Hz", "OP:", nes.cpu.opcode)
-            pass
+            
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    exit()
 
         nes.clock()
 
