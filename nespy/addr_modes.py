@@ -21,7 +21,7 @@ def IMM(cpu: Cmp6502) -> int:
 
 def ZP0(cpu: Cmp6502) -> int:
     # like IMM but zero paged
-    cpu.addr_abs = cpu.bus.read(cpu.pc)
+    cpu.addr_abs = cpu.bus.read(cpu.pc) & 0xFF
     cpu.pc += 1
     return 0
 

@@ -44,6 +44,10 @@ class Cmp2C02():
     status: int = 0x00
     mask: int = 0x00
     control: int = 0x00
+
+    odd_frame: bool = False
+
+    open_bus: int = 0x00
     
     @dataclass
     class RamAddrRegister:
@@ -52,14 +56,16 @@ class Cmp2C02():
         nametable_x: bool = False
         nametable_y: bool = False
         fine_y: int = 0x00
+        unused: int = 0x00
 
         def pack(self) -> int:
-            return (self.fine_y << 12) | (self.nametable_x << 11) | (self.nametable_y << 10) | (self.coarse_y << 5) | (self.coarse_x)
+            return ((self.unused & 0b1) << 15) | ((self.fine_y & 0b111) << 12) | ((self.nametable_y & 0b1) << 11) | ((self.nametable_x & 0b1) << 10) | ((self.coarse_y & 0b11111) << 5) | (self.coarse_x & 0b11111)
 
         def load(self, value):
+            self.unused = ((value & 0b1000000000000000) >> 15)
             self.fine_y = ((value & 0b111000000000000) >> 12)
-            self.nametable_x = ((value & 0b100000000000) >> 11)
-            self.nametable_y = ((value & 0b10000000000) >> 10)
+            self.nametable_y = ((value & 0b100000000000) >> 11)
+            self.nametable_x = ((value & 0b10000000000) >> 10)
             self.coarse_y = ((value & 0b1111100000) >> 5)
             self.coarse_x = ((value & 0b11111) >> 0)
     
@@ -79,8 +85,8 @@ class Cmp2C02():
         self.vram_addr = self.RamAddrRegister()
         self.tram_addr = self.RamAddrRegister()
 
-        self.screen = pg.Surface((256, 240), pg.HWACCEL|pg.DOUBLEBUF)
-        self.display = pg.display.set_mode((256*2, 240*2), pg.HWACCEL|pg.DOUBLEBUF)
+        self.screen = pg.Surface((256, 240), pg.HWSURFACE|pg.HWACCEL)
+        self.display = pg.display.set_mode((256*4, 240*4), pg.HWSURFACE|pg.HWACCEL|pg.DOUBLEBUF)
 
         self.spr_screen = [[0x00 for j in range(240)] for i in range(256)]
 
@@ -107,40 +113,52 @@ class Cmp2C02():
         self.mask = 0x00
         self.control = 0x00
         self.vram_addr.load(0x0000)
-        self.tram_addr.load(0x000)
+        self.tram_addr.load(0x0000)
         self.oam_addr = 0x00
+        self.odd_frame = False
+        self.open_bus = 0x00
 
     def cpu_read(self, addr: int, read_only: bool = False) -> int:
-        value = 0x00
-
         if addr == 0x0002:
             value = (self.status & 0xE0) | (self.ppu_data_buffer & 0x1F)
+
+            if self.scanline == 241 and self.cycle == 0:
+                value &= ~0x80
+
             self.status &= ~VERTICAL_BLANK
             self.address_latch = 0
             return value
-        
-        if addr == 0x0003: # OAM addr
-            pass
 
         if addr == 0x0004: # OAM data
+            if self.scanline < 240 and (1 <= self.cycle <= 64):
+                return 0xFF
+            
             return self.oam[self.oam_addr]
 
         if addr == 0x0007:
             value = self.ppu_data_buffer
             self.ppu_data_buffer = self.ppu_read(self.vram_addr.pack())
 
-            if self.vram_addr.pack() >= 0x3F00:
+            if (self.vram_addr.pack() & 0x3FFF) >= 0x3F00:
                 value = self.ppu_data_buffer
-            
+                self.ppu_data_buffer = self.ppu_read(self.vram_addr.pack() - 0x1000)
+
             self.vram_addr.load(self.vram_addr.pack() + (32 if (self.control & INCREMENT_MODE) else 1))
         
             return value
 
-        return value
+        return self.open_bus
 
     def cpu_write(self, addr: int, value: int):
+        self.open_bus = value
+        
         if addr == 0x0000:
+            old_ctrl = self.control
             self.control = value
+
+            if (not (old_ctrl & ENABLE_NMI) and (self.control & ENABLE_NMI) and (self.status & VERTICAL_BLANK)):
+                self.nmi = True
+
             self.tram_addr.nametable_x = bool(self.control & NAMETABLE_X)
             self.tram_addr.nametable_y = bool(self.control & NAMETABLE_Y)
 
@@ -150,15 +168,13 @@ class Cmp2C02():
             self.mask = value
             return
 
-        if addr == 0x0002:
-            pass # status
-
         if addr == 0x0003:
             self.oam_addr = value # OAM addr
             return
         
         if addr == 0x0004:
             self.oam[self.oam_addr] = value
+            self.oam_addr = (self.oam_addr + 1) & 0xFF
             return
 
         if addr == 0x0005:
@@ -190,12 +206,22 @@ class Cmp2C02():
 
         if addr == 0x0007:
             self.ppu_write(self.vram_addr.pack(), value)
-            self.vram_addr.load(self.vram_addr.pack() + (32 if self.control & INCREMENT_MODE else 1))
+            self.vram_addr.load(self.vram_addr.pack() + (32 if (self.control & INCREMENT_MODE) else 1))
             return
+
 
     def ppu_read(self, addr: int, read_only: bool = False) -> int:
         value = 0x00
         addr &= 0x3FFF
+
+        if 0x3F00 <= addr <= 0x3FFF:
+            addr &= 0x001F
+            if addr == 0x0010: addr = 0x0000
+            elif addr == 0x0014: addr = 0x0004
+            elif addr == 0x0018: addr = 0x0008
+            elif addr == 0x001C: addr = 0x000C
+            return self.tbl_palette[addr] & (0x30 if (self.mask & GRAYSCALE) else 0x3F)
+        
 
         out = self.cartridge.ppu_read(addr)
         if out is not None:
@@ -228,15 +254,7 @@ class Cmp2C02():
                     return self.tbl_name[1][addr & 0x03FF]
                 if 0x0C00 <= addr <= 0x0FFF:
                     return self.tbl_name[1][addr & 0x03FF]
-            
-        if 0x3F00 <= addr <= 0x3FFF:
-            addr &= 0x001F
-            if addr == 0x0010: addr = 0x0000
-            elif addr == 0x0014: addr = 0x0004
-            elif addr == 0x0018: addr = 0x0008
-            elif addr == 0x001C: addr = 0x000C
-            return self.tbl_palette[addr] & (0x30 if self.mask & GRAYSCALE else 0x3F)
-        
+
         return value
 
     def ppu_write(self, addr: int, value: int):
@@ -347,16 +365,18 @@ class Cmp2C02():
 
     def clock(self):
         if -1 <= self.scanline < 240:
-            if self.scanline == 0 and self.cycle == 0:
+            if self.scanline == 0 and self.cycle == 0 and self.odd_frame and (self.mask & (RENDER_BACKGROUND | RENDER_SPRITES)):
                 self.cycle = 1
             
             if self.scanline == -1 and self.cycle == 1:
                 self.status &= ~VERTICAL_BLANK
+                self.status &= ~SPRITE_OVERFLOW
+                self.status &= ~SPRITE_ZERO_HIT
             
             if (2 <= self.cycle < 258) or (321 <= self.cycle < 338):
                 self.update_shifters()
 
-                k = (self.cycle - 1) % 8
+                k = (self.cycle - 1) & 0x7
 
                 if k == 0:
                     self.load_background_shifters()
@@ -387,26 +407,16 @@ class Cmp2C02():
                 self.load_background_shifters()
                 self.transfer_address_x()
             
-            if self.cycle == 338 or self.cycle == 340:
-                self.bg_next_tile_id = self.ppu_read(0x2000 | (self.vram_addr.pack() & 0x0FFF))
-
             if self.scanline == -1 and (280 <= self.cycle < 305):
                 self.transfer_address_y()
-        
-        elif self.scanline == 240:
-            pass
-            
-        elif 241 <= self.scanline < 261:
-            if self.scanline == 241 and self.cycle == 1:
-                self.status |= VERTICAL_BLANK
 
-                if self.control & ENABLE_NMI:
-                    self.nmi = True
+            if self.cycle == 338 or self.cycle == 340:
+                self.bg_next_tile_id = self.ppu_read(0x2000 | (self.vram_addr.pack() & 0x0FFF))
         
         bg_pixel = 0x00
         bg_palette = 0x00
 
-        if self.mask & RENDER_BACKGROUND:
+        if self.mask & RENDER_BACKGROUND and ((self.mask & RENDER_BACKGROUND_LEFT) or (self.cycle >= 9)):
             bitmux = 0x8000 >> self.fine_x
             p0 = (self.bg_shifter_pattern_lwrd & bitmux) > 0
             p1 = (self.bg_shifter_pattern_hwrd & bitmux) > 0
@@ -417,10 +427,21 @@ class Cmp2C02():
             bg1 = (self.bg_shifter_attrib_hwrd & bitmux) > 0
             bg_palette = (bg1 << 1) | bg0
 
-        if 0 <= self.cycle < 256 and 0 <= self.scanline < 240:
+        if 1 <= self.cycle <= 256 and 0 <= self.scanline < 240:
             self.spr_screen[self.cycle - 1][self.scanline] = self.get_color_from_palette(bg_palette, bg_pixel)
 
+        elif 241 <= self.scanline < 261:
+            if self.scanline == 241 and self.cycle == 1:
+                self.status |= VERTICAL_BLANK
+
+                if self.control & ENABLE_NMI:
+                    self.nmi = True
+
         self.cycle += 1
+
+        if self.mask & (RENDER_BACKGROUND | RENDER_SPRITES):
+            if self.cycle == 260 and self.scanline < 240:
+                self.cartridge.mapper.scanline()
 
         if self.cycle >= 341:
             self.cycle = 0
@@ -429,9 +450,10 @@ class Cmp2C02():
             if self.scanline >= 261:
                 self.scanline = -1
                 self.frame_complete = True
+                self.odd_frame = not self.odd_frame
                 
                 pg.surfarray.blit_array(self.screen, np.array(self.spr_screen))
-                pg.transform.scale2x(self.screen, self.display)
+                pg.transform.scale_by(self.screen, 4, self.display)
                 pg.display.flip()
 
     def plug_cartridge(self, cart: Cartridge):

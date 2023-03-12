@@ -34,7 +34,7 @@ class Cartridge():
         if mapper_1 & 0x04: # trainer exists, seek past it
             stream.seek(512)
 
-        self.mapper_id = ((mapper_2 << 4) << 4) | (mapper_1 >> 4)
+        self.mapper_id = ((mapper_2 >> 4) << 4) | (mapper_1 >> 4)
 
         # load hardware mirror
         self.hardware_mirror = MIRROR_VERTICAL if (mapper_1 & 1) else MIRROR_HORIZONTAL

@@ -57,14 +57,17 @@ def ASL(cpu: Cmp6502, addr_abs) -> int:
     return 0
 
 def BRK(cpu: Cmp6502, addr_abs) -> int: # program sourced interrupt
-    t = (cpu.pc + 1) & 0xFFFF
+    cpu.pc = (cpu.pc + 1) & 0xFFFF
+    cpu.bus.read(cpu.pc)
 
     cpu.status |= I
-    cpu.bus.write(0x0100 + cpu.s, (t >> 8) & 0xFF)
-    cpu.bus.write(0x0100 + cpu.s - 1, t & 0xFF)
-    cpu.s = (cpu.s - 2) & 0xFF
+    cpu.bus.write(0x0100 + cpu.s, (cpu.pc >> 8) & 0xFF)
+    cpu.bus.write(0x0100 + cpu.s - 1, cpu.pc & 0xFF)
+    cpu.bus.write(0x0100 + cpu.s - 2, cpu.status | (B | U))
 
-    cpu.bus.write(0x0100 + cpu.s, cpu.status | B)
+    cpu.s = (cpu.s - 3) & 0xFF
+
+    cpu.status &= ~B
 
     cpu.pc = (cpu.bus.read(0xFFFF) << 8) | cpu.bus.read(0xFFFE)
 
@@ -259,6 +262,8 @@ def PLP(cpu: Cmp6502, addr_abs) -> int:
     return 0
 
 def RTI(cpu: Cmp6502, addr_abs) -> None:
+    cpu.bus.read(cpu.pc) # dummy fetch
+
     cpu.s = (cpu.s + 1) & 0xFF
     cpu.status = cpu.bus.read(0x0100 + cpu.s)
     cpu.status &= ~(B|U)
@@ -269,6 +274,8 @@ def RTI(cpu: Cmp6502, addr_abs) -> None:
     return 0
 
 def RTS(cpu: Cmp6502, addr_abs) -> None:
+    cpu.bus.read(cpu.pc) # dummy fetch
+
     cpu.pc = ((cpu.bus.read(0x0100 + cpu.s + 1) | (cpu.bus.read(0x0100 + cpu.s + 2) << 8)) + 1) & 0xFFFF
     cpu.s = (cpu.s + 2) & 0xFF
 

@@ -17,6 +17,8 @@ class Bus():
     dma_enable: bool = False # are we currently running a DMA
     dma_wait: bool = True # set this to make sure the DMA only starts on an even cycle
 
+    open_bus: int = 0x00
+
     controller_states: list = None
 
     def __init__(self):
@@ -46,34 +48,33 @@ class Bus():
         self.ppu.plug_cartridge(self.cartridge)
 
     def read(self, addr: int, read_only: bool = False):
-        value = 0x00
-
         cart_read = self.cartridge.cpu_read(addr)
 
         if cart_read is not None: # Cartridge address range
             # The cartridge can effectively trump any bus read using the mapper
-            value = cart_read
+            return cart_read
 
         elif 0x0000 <= addr <= 0x1FFF: # RAM address range
-            value = self.ram[addr & 0x7FF] # mirrored every 0x800
+            return self.ram[addr & 0x7FF] # mirrored every 0x800
         
         elif 0x2000 <= addr <= 0x3FFF: # PPU address range
-            value = self.ppu.cpu_read(addr & 0x0007, read_only)
+            return self.ppu.cpu_read(addr & 0x0007, read_only)
         
         elif addr == 0x4015: # specific address that reads APU status
             pass # TODO: read APU status
+            return 0x00
 
         elif 0x4016 <= addr <= 0x4017: # both plugged in controllers
             value = (self.controller_state[addr & 0x0001] & 0x80) > 0
             self.controller_state[addr & 0x0001] = (self.controller_state[addr & 0x0001] << 1) & 0xFF
+            return value
 
-        if value is None:
-            print("NONE", self.cpu.pc, self.cpu.a, self.cpu.opcode)
-
-        return value
+        return self.open_bus
 
     def write(self, addr: int, value: int):
         value &= 0xFF # bounds checking
+
+        self.open_bus = value
 
         if self.cartridge.cpu_write(addr, value): # cartridge mapper can trump any write
             pass
@@ -107,7 +108,7 @@ class Bus():
 
         # TODO: clock apu
 
-        if not (self.system_clock_count % 3): # cpu only clocks once every 3 system clocks
+        if self.system_clock_count % 3 == 0: # cpu only clocks once every 3 system clocks
             # Direct memory access
             if self.dma_enable:
                 if self.dma_wait:
@@ -119,7 +120,7 @@ class Bus():
                         self.dma_value = self.read((self.dma_page << 8) | self.dma_addr)
                     
                     else:
-                        self.ppu.oam[self.dma_addr] = self.dma_value
+                        self.write(0x2004, self.dma_value)
 
                         self.dma_addr = (self.dma_addr + 1) & 0xFF
 

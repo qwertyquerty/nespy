@@ -17,7 +17,7 @@ MIRROR_ONSCREEN_HI = 5
 
 # PPU status register
 SPRITE_OVERFLOW = (1 << 5)
-SPRITE_ZERO_HIT = (1 << 7)
+SPRITE_ZERO_HIT = (1 << 6)
 VERTICAL_BLANK = (1 << 7)
 
 # PPU mask register

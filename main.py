@@ -11,7 +11,7 @@ pg.display.set_icon(pg.Surface((16,16)))
 
 def main():
     nes = Bus()
-    cart = Cartridge("./roms/cpu.nes")
+    cart = Cartridge("./roms/cpu_dummy_writes_ppumem.nes")
     nes.plug_cartridge(cart)
     nes.reset()
 
@@ -23,8 +23,8 @@ def main():
 
     while True:
         if (nes.cpu.clock_count & 0xFFFF) == 0:
-            print(int(nes.cpu.clock_count / (time.time() - start)), "Hz", "OP:", nes.cpu.opcode)
-            
+            #print(int(nes.cpu.clock_count / (time.time() - start)), "Hz", "OP:", nes.cpu.opcode)
+        
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     exit()

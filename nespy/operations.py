@@ -1,7 +1,7 @@
 from nespy.instructions import *
 from nespy.addr_modes import *
 
-NUL = lambda cpu, addr_abs=None: 0
+NUL = lambda cpu, addr_abs=None: 0;
 
 # (Instruction, Addressing Mode, Cycles)
 
