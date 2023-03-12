@@ -4,10 +4,6 @@ from nespy.cmp_6502 import Cmp6502
 from nespy.cartridge import Cartridge
 from nespy.const import *
 
-
-import pygame as pg
-import sounddevice as sd
-
 class Bus():
     cpu: Cmp6502 = None
     ppu: Cmp2C02 = None
@@ -26,6 +22,7 @@ class Bus():
     open_bus: int = 0x00
 
     controller_states: list = None
+    controllers: tuple = None
 
     audio_sample: float = 0
     audio_time: float = 0
@@ -39,6 +36,7 @@ class Bus():
         self.ppu = Cmp2C02(self)
         self.apu = Cmp2A03()
         self.ram = [0x00 for i in range(0x0800)]
+        self.controllers = (0x00, 0x00)
         self.controller_state = [0x00, 0x00]
         self.audio_samples = []
     
@@ -112,19 +110,12 @@ class Bus():
             self.dma_enable = True
         
         elif 0x4016 <= addr <= 0x4017: # both plugged in controllers
-            keys = pg.key.get_pressed()
-
-            controllers = (
-                keys[pg.K_RIGHT] | (keys[pg.K_LEFT] << 1) | (keys[pg.K_DOWN] << 2) | (keys[pg.K_UP] << 3) | (keys[pg.K_s] << 4) | (keys[pg.K_a] << 5) | (keys[pg.K_x] << 6) | (keys[pg.K_z] << 7),
-                0x00
-            )
-
-            self.controller_state[addr & 0x0001] = controllers[addr & 0x0001]
+            self.controller_state[addr & 0x0001] = self.controllers[addr & 0x0001]
 
     def clock(self):
         self.ppu.clock()
 
-        self.apu.clock()
+        #self.apu.clock()
 
         if self.system_clock_count % 3 == 0: # cpu only clocks once every 3 system clocks
             # Direct memory access
@@ -152,9 +143,9 @@ class Bus():
 
         self.audio_time += self.audio_time_per_clock
 
-        if self.audio_time >= self.audio_system_per_system_sample:
-            self.audio_time -= self.audio_system_per_system_sample
-            self.audio_sample = self.apu.get_sample()
+        #if self.audio_time >= self.audio_system_per_system_sample:
+        #    self.audio_time -= self.audio_system_per_system_sample
+        #    self.audio_sample = self.apu.get_sample()
 
         if self.ppu.nmi:
             self.ppu.nmi = False

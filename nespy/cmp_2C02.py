@@ -1,7 +1,4 @@
 from dataclasses import dataclass
-import pygame as pg
-
-import numpy as np
 
 from nespy.cartridge import Cartridge
 from nespy.const import *
@@ -12,9 +9,6 @@ class Cmp2C02():
     tbl_name: list[list] = None
     tbl_pattern: list[list] = None
     tbl_palette: list = None
-
-    screen: pg.Surface = None
-    display: pg.Surface = None
 
     spr_screen: list[list[tuple]] = None
 
@@ -84,9 +78,6 @@ class Cmp2C02():
 
         self.vram_addr = self.RamAddrRegister()
         self.tram_addr = self.RamAddrRegister()
-
-        self.screen = pg.Surface((256, 240), pg.HWSURFACE|pg.HWACCEL)
-        self.display = pg.display.set_mode((256*4, 240*4), pg.HWSURFACE|pg.HWACCEL|pg.DOUBLEBUF)
 
         self.spr_screen = [[0x00 for j in range(240)] for i in range(256)]
 
@@ -308,60 +299,6 @@ class Cmp2C02():
             elif addr == 0x001C: addr = 0x000C
             self.tbl_palette[addr] = value
             return
-     
-
-    def get_color_from_palette(self, palette: int, pixel: int) -> int:
-        return PAL_COLORS[self.ppu_read(0x3F00 + (palette << 2) + pixel) & 0x3F]
-
-    def increment_scroll_x(self):
-        if self.mask & (RENDER_BACKGROUND | RENDER_SPRITES):
-            if self.vram_addr.coarse_x == 31:
-                self.vram_addr.coarse_x = 0
-                self.vram_addr.nametable_x = not self.vram_addr.nametable_x
-            else:
-                self.vram_addr.coarse_x += 1
-    
-    def increment_scroll_y(self):
-        if self.mask & (RENDER_BACKGROUND | RENDER_SPRITES):
-            if self.vram_addr.fine_y < 7:
-                self.vram_addr.fine_y += 1
-            else:
-                self.vram_addr.fine_y = 0
-                
-                if self.vram_addr.coarse_y == 29:
-                    self.vram_addr.coarse_y = 0
-                    self.vram_addr.nametable_y = not self.vram_addr.nametable_y
-                
-                elif self.vram_addr.coarse_y == 31:
-                    self.vram_addr.coarse_y = 0
-                
-                else:
-                    self.vram_addr.coarse_y += 1
-
-    def transfer_address_x(self):
-        if self.mask & (RENDER_BACKGROUND | RENDER_SPRITES):
-            self.vram_addr.nametable_x = self.tram_addr.nametable_x
-            self.vram_addr.coarse_x = self.tram_addr.coarse_x
-
-    def transfer_address_y(self):
-        if self.mask & (RENDER_BACKGROUND | RENDER_SPRITES):
-            self.vram_addr.fine_y = self.tram_addr.fine_y
-            self.vram_addr.nametable_y = self.tram_addr.nametable_y
-            self.vram_addr.coarse_y = self.tram_addr.coarse_y
-    
-    def load_background_shifters(self):
-        self.bg_shifter_pattern_lwrd = (self.bg_shifter_pattern_lwrd & 0xFF00) | self.bg_next_tile_lsb
-        self.bg_shifter_pattern_hwrd = (self.bg_shifter_pattern_hwrd & 0xFF00) | self.bg_next_tile_msb
-        self.bg_shifter_attrib_lwrd = (self.bg_shifter_attrib_lwrd & 0xFF00) | (0xFF if (self.bg_next_tile_attrib & 0x01) else 0x00)
-        self.bg_shifter_attrib_hwrd = (self.bg_shifter_attrib_hwrd & 0xFF00) | (0xFF if (self.bg_next_tile_attrib & 0x02) else 0x00)
-
-    def update_shifters(self):
-        if self.mask & RENDER_BACKGROUND:
-            self.bg_shifter_pattern_lwrd = (self.bg_shifter_pattern_lwrd << 1) & 0xFFFF
-            self.bg_shifter_pattern_hwrd = (self.bg_shifter_pattern_hwrd << 1) & 0xFFFF
-            self.bg_shifter_attrib_lwrd = (self.bg_shifter_attrib_lwrd << 1) & 0xFFFF
-            self.bg_shifter_attrib_hwrd = (self.bg_shifter_attrib_hwrd << 1) & 0xFFFF
-
 
     def clock(self):
         if -1 <= self.scanline < 240:
@@ -369,17 +306,22 @@ class Cmp2C02():
                 self.cycle = 1
             
             if self.scanline == -1 and self.cycle == 1:
-                self.status &= ~VERTICAL_BLANK
-                self.status &= ~SPRITE_OVERFLOW
-                self.status &= ~SPRITE_ZERO_HIT
-            
-            if (2 <= self.cycle < 258) or (321 <= self.cycle < 338):
-                self.update_shifters()
+                self.status &= ~(VERTICAL_BLANK | SPRITE_OVERFLOW | SPRITE_ZERO_HIT)
 
+            if (2 <= self.cycle < 258) or (321 <= self.cycle < 338):
+                if self.mask & RENDER_BACKGROUND:
+                    self.bg_shifter_pattern_lwrd = (self.bg_shifter_pattern_lwrd << 1) & 0xFFFF
+                    self.bg_shifter_pattern_hwrd = (self.bg_shifter_pattern_hwrd << 1) & 0xFFFF
+                    self.bg_shifter_attrib_lwrd = (self.bg_shifter_attrib_lwrd << 1) & 0xFFFF
+                    self.bg_shifter_attrib_hwrd = (self.bg_shifter_attrib_hwrd << 1) & 0xFFFF
+                
                 k = (self.cycle - 1) & 0x7
 
                 if k == 0:
-                    self.load_background_shifters()
+                    self.bg_shifter_pattern_lwrd = (self.bg_shifter_pattern_lwrd & 0xFF00) | self.bg_next_tile_lsb
+                    self.bg_shifter_pattern_hwrd = (self.bg_shifter_pattern_hwrd & 0xFF00) | self.bg_next_tile_msb
+                    self.bg_shifter_attrib_lwrd = (self.bg_shifter_attrib_lwrd & 0xFF00) | (0xFF if (self.bg_next_tile_attrib & 0x01) else 0x00)
+                    self.bg_shifter_attrib_hwrd = (self.bg_shifter_attrib_hwrd & 0xFF00) | (0xFF if (self.bg_next_tile_attrib & 0x02) else 0x00)
                     self.bg_next_tile_id = self.ppu_read(0x2000 | (self.vram_addr.pack() & 0x0FFF))
 
                 elif k == 2:
@@ -398,17 +340,45 @@ class Cmp2C02():
                     self.bg_next_tile_msb = self.ppu_read((bool(self.control & PATTERN_BACKGROUND) << 12) + (self.bg_next_tile_id << 4) + self.vram_addr.fine_y + 8) & 0xFF
 
                 elif k == 7:
-                    self.increment_scroll_x()
+                    if self.mask & (RENDER_BACKGROUND | RENDER_SPRITES):
+                        if self.vram_addr.coarse_x == 31:
+                            self.vram_addr.coarse_x = 0
+                            self.vram_addr.nametable_x = not self.vram_addr.nametable_x
+                        else:
+                            self.vram_addr.coarse_x += 1
             
             if self.cycle == 256:
-                self.increment_scroll_y()
+                if self.mask & (RENDER_BACKGROUND | RENDER_SPRITES):
+                    if self.vram_addr.fine_y < 7:
+                        self.vram_addr.fine_y += 1
+                    else:
+                        self.vram_addr.fine_y = 0
+                        
+                        if self.vram_addr.coarse_y == 29:
+                            self.vram_addr.coarse_y = 0
+                            self.vram_addr.nametable_y = not self.vram_addr.nametable_y
+                        
+                        elif self.vram_addr.coarse_y == 31:
+                            self.vram_addr.coarse_y = 0
+                        
+                        else:
+                            self.vram_addr.coarse_y += 1
     
             if self.cycle == 257:
-                self.load_background_shifters()
-                self.transfer_address_x()
+                self.bg_shifter_pattern_lwrd = (self.bg_shifter_pattern_lwrd & 0xFF00) | self.bg_next_tile_lsb
+                self.bg_shifter_pattern_hwrd = (self.bg_shifter_pattern_hwrd & 0xFF00) | self.bg_next_tile_msb
+                self.bg_shifter_attrib_lwrd = (self.bg_shifter_attrib_lwrd & 0xFF00) | (0xFF if (self.bg_next_tile_attrib & 0x01) else 0x00)
+                self.bg_shifter_attrib_hwrd = (self.bg_shifter_attrib_hwrd & 0xFF00) | (0xFF if (self.bg_next_tile_attrib & 0x02) else 0x00)
+
+                if self.mask & (RENDER_BACKGROUND | RENDER_SPRITES):
+                    self.vram_addr.nametable_x = self.tram_addr.nametable_x
+                    self.vram_addr.coarse_x = self.tram_addr.coarse_x
             
             if self.scanline == -1 and (280 <= self.cycle < 305):
-                self.transfer_address_y()
+                if self.mask & (RENDER_BACKGROUND | RENDER_SPRITES):
+                    self.vram_addr.fine_y = self.tram_addr.fine_y
+                    self.vram_addr.nametable_y = self.tram_addr.nametable_y
+                    self.vram_addr.coarse_y = self.tram_addr.coarse_y
 
             if self.cycle == 338 or self.cycle == 340:
                 self.bg_next_tile_id = self.ppu_read(0x2000 | (self.vram_addr.pack() & 0x0FFF))
@@ -428,7 +398,7 @@ class Cmp2C02():
             bg_palette = (bg1 << 1) | bg0
 
         if 1 <= self.cycle <= 256 and 0 <= self.scanline < 240:
-            self.spr_screen[self.cycle - 1][self.scanline] = self.get_color_from_palette(bg_palette, bg_pixel)
+            self.spr_screen[self.cycle - 1][self.scanline] = PAL_COLORS[self.ppu_read(0x3F00 + (bg_palette << 2) + bg_pixel) & 0x3F]
 
         elif 241 <= self.scanline < 261:
             if self.scanline == 241 and self.cycle == 1:
@@ -452,9 +422,5 @@ class Cmp2C02():
                 self.frame_complete = True
                 self.odd_frame = not self.odd_frame
                 
-                pg.surfarray.blit_array(self.screen, np.array(self.spr_screen))
-                pg.transform.scale_by(self.screen, 4, self.display)
-                pg.display.flip()
-
     def plug_cartridge(self, cart: Cartridge):
         self.cartridge = cart

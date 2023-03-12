@@ -1,6 +1,5 @@
 from typing import Callable
 from dataclasses import dataclass
-import math
 
 def apx_sin(t: float):
     j = t * 0.15915
