@@ -1,11 +1,17 @@
+from nespy.cmp_2A03 import Cmp2A03
 from nespy.cmp_2C02 import Cmp2C02
 from nespy.cmp_6502 import Cmp6502
 from nespy.cartridge import Cartridge
+from nespy.const import *
+
 
 import pygame as pg
+import sounddevice as sd
 
 class Bus():
     cpu: Cmp6502 = None
+    ppu: Cmp2C02 = None
+    apu: Cmp2A03 = None
     ram: list = None
     cartridge: Cartridge = None
 
@@ -21,11 +27,20 @@ class Bus():
 
     controller_states: list = None
 
+    audio_sample: float = 0
+    audio_time: float = 0
+    audio_global_time: float = 0
+    audio_time_per_clock: float = 1 / PPU_CLOCK_FREQ
+    audio_system_per_system_sample: float = 1/AUDIO_SAMPLE_RATE
+    audio_sample: int = 0x00
+
     def __init__(self):
         self.cpu = Cmp6502(self)
         self.ppu = Cmp2C02(self)
+        self.apu = Cmp2A03()
         self.ram = [0x00 for i in range(0x0800)]
         self.controller_state = [0x00, 0x00]
+        self.audio_samples = []
     
     def reset(self):
         if self.cartridge:
@@ -43,6 +58,10 @@ class Bus():
         self.dma_wait = True
         self.dma_enable = False
     
+        self.audio_time = 0
+        self.audio_global_time = 0
+        self.audio_sample = 0x00
+
     def plug_cartridge(self, cart: Cartridge):
         self.cartridge = cart
         self.ppu.plug_cartridge(self.cartridge)
@@ -61,8 +80,7 @@ class Bus():
             return self.ppu.cpu_read(addr & 0x0007, read_only)
         
         elif addr == 0x4015: # specific address that reads APU status
-            pass # TODO: read APU status
-            return 0x00
+            return self.apu.cpu_read(addr)
 
         elif 0x4016 <= addr <= 0x4017: # both plugged in controllers
             value = (self.controller_state[addr & 0x0001] & 0x80) > 0
@@ -86,7 +104,7 @@ class Bus():
             self.ppu.cpu_write(addr & 0x0007, value)
         
         elif (0x4000 <= addr <= 0x4013) or addr == 0x4015: # APU addresses
-            pass # TODO: write to APU
+            self.apu.cpu_write(addr, value)
             
         elif addr == 0x4014: # specific address that triggers a DMA
             self.dma_page = value
@@ -106,7 +124,7 @@ class Bus():
     def clock(self):
         self.ppu.clock()
 
-        # TODO: clock apu
+        self.apu.clock()
 
         if self.system_clock_count % 3 == 0: # cpu only clocks once every 3 system clocks
             # Direct memory access
@@ -131,6 +149,12 @@ class Bus():
             else:
                 # DMA isn't happening so we can actually clock the cpu
                 self.cpu.clock()
+
+        self.audio_time += self.audio_time_per_clock
+
+        if self.audio_time >= self.audio_system_per_system_sample:
+            self.audio_time -= self.audio_system_per_system_sample
+            self.audio_sample = self.apu.get_sample()
 
         if self.ppu.nmi:
             self.ppu.nmi = False

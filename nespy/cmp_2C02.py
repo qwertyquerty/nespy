@@ -151,7 +151,7 @@ class Cmp2C02():
 
     def cpu_write(self, addr: int, value: int):
         self.open_bus = value
-        
+
         if addr == 0x0000:
             old_ctrl = self.control
             self.control = value
